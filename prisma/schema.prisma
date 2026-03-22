@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Offer {
+  id                      String   @id @default(cuid())
+  network                 String   @default("MaxBounty")
+  title                   String
+  payout                  Float
+  affiliatePostUrl        String
+  subParam                String?
+  countries               String[]
+  languages               String[] @default(["en"])
+  active                  Boolean  @default(true)
+  prizeTheme              String?
+  testLeads               Int      @default(0)
+  epc                     Float?
+  exitIntentEnabled       Boolean  @default(true)
+  exitIntentMaxShows      Int      @default(2)
+  exitIntentCooldownHours Int      @default(24)
+  exitIntentSkipReturners Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  leads                   Lead[]
+  analyticsEvents         AnalyticsEvent[]
+}
+
+model Lead {
+  id        String   @id @default(cuid())
+  offerId   String
+  email     String?
+  phone     String?
+  subId     String?
+  locale    String   @default("en")
+  variant   String?
+  ip        String?
+  country   String?
+  createdAt DateTime @default(now())
+  offer     Offer    @relation(fields: [offerId], references: [id])
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  event     String
+  offerId   String
+  locale    String   @default("en")
+  variant   String?
+  subId     String?
+  depth     Float?
+  sessionId String?
+  visitorId String?
+  createdAt DateTime @default(now())
+  offer     Offer    @relation(fields: [offerId], references: [id])
+}
