@@ -1,0 +1,19 @@
+{
+  "exitIntent": {
+    "firstTimer": {
+      "title": "Attendez! Vous allez manquer ça!",
+      "subtitle": "Complétez votre participation pour gagner gros.",
+      "cta": "Réclamer Mon Prix"
+    },
+    "returnerA": {
+      "title": "Bienvenue! Votre prix vous attend.",
+      "subtitle": "Vous avez une participation non réclamée. Terminez maintenant.",
+      "cta": "Terminer Mon Inscription"
+    },
+    "returnerB": {
+      "title": "Vous hésitez encore?",
+      "subtitle": "Des centaines ont déjà participé. Ne manquez pas votre chance.",
+      "cta": "Participer Maintenant"
+    }
+  }
+}

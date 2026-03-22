@@ -1,0 +1,19 @@
+{
+  "exitIntent": {
+    "firstTimer": {
+      "title": "Wait! You're about to miss out!",
+      "subtitle": "Complete your entry for a chance to win big.",
+      "cta": "Claim My Prize"
+    },
+    "returnerA": {
+      "title": "Welcome back! Your prize is waiting.",
+      "subtitle": "You still have an unclaimed entry. Finish now.",
+      "cta": "Finish My Entry"
+    },
+    "returnerB": {
+      "title": "Still thinking about it?",
+      "subtitle": "Hundreds have already entered. Don't miss your shot.",
+      "cta": "Enter Now"
+    }
+  }
+}
