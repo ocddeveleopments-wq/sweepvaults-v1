@@ -240,13 +240,22 @@ export default function SpinClient({ offer, locale, variant }: { offer: Offer; l
   } catch {}
 }
 
+async function saveLeadAPI(data: Record<string, any>) {
+  const res = await fetch("/api/leads", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  })
+  return res.json()
+}
+
   async function handleEmailSubmit(e: React.FormEvent) {
   e.preventDefault()
   if (!email || !firstName || !lastName) return
   setLoading(true)
   playSound("click")
   const utms = getUTMParams()
-  const result = await saveLead({
+  const result = await saveLeadAPI({
     offerId: offer.id,
     email,
     firstName,
@@ -256,7 +265,7 @@ export default function SpinClient({ offer, locale, variant }: { offer: Offer; l
     sessionId,
     visitorId,
     ...utms,
-  } as any)
+  })
   if (result.success && result.leadId) {
     capture("email_submitted", { offerId: offer.id, variant, locale })
     await postToAffiliate(email, result.leadId, firstName, lastName)
@@ -265,21 +274,40 @@ export default function SpinClient({ offer, locale, variant }: { offer: Offer; l
   setStep("phone")
 }
 
-  async function handleExitIntentSubmit(email: string, firstName: string, lastName: string) {
-  const result = await saveLead({ offerId: offer.id, email, firstName, lastName, locale, variant: `${variant}_exit`, sessionId, visitorId } as any)
-  if (result.success && result.leadId) await postToAffiliate(email, result.leadId, firstName, lastName)
+  async function handleExitIntentSubmit(emailVal: string, firstName: string, lastName: string) {
+  const result = await saveLeadAPI({
+    offerId: offer.id,
+    email: emailVal,
+    firstName,
+    lastName,
+    locale,
+    variant: `${variant}_exit`,
+    sessionId,
+    visitorId,
+  })
+  if (result.success && result.leadId) await postToAffiliate(emailVal, result.leadId, firstName, lastName)
 }
 
   async function handlePhoneSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!phone) return
-    setLoading(true)
-    playSound("click")
-    await saveLead({ offerId: offer.id, email, phone, locale, variant, sessionId, visitorId } as any)
-    capture("phone_upsell_submitted", { offerId: offer.id, variant, locale })
-    setLoading(false)
-    setStep("done")
-  }
+  e.preventDefault()
+  if (!phone) return
+  setLoading(true)
+  playSound("click")
+  await saveLeadAPI({
+    offerId: offer.id,
+    email,
+    phone,
+    firstName,
+    lastName,
+    locale,
+    variant,
+    sessionId,
+    visitorId,
+  })
+  capture("phone_upsell_submitted", { offerId: offer.id, variant, locale })
+  setLoading(false)
+  setStep("done")
+}
 
   const cssVars = {
     "--accent": theme.accent,
