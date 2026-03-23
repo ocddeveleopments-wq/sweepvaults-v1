@@ -16,6 +16,8 @@ export default function EditOfferClient({ offer }: { offer: any }) {
     countries: offer.countries.join(", "),
     languages: offer.languages.join(", "),
     prizeTheme: offer.prizeTheme ?? "",
+    dailyCap: offer.dailyCap ?? 15,
+    rotationOrder: offer.rotationOrder ?? 0,
     exitIntentEnabled: offer.exitIntentEnabled,
     exitIntentMaxShows: offer.exitIntentMaxShows,
     exitIntentCooldownHours: offer.exitIntentCooldownHours,
@@ -76,23 +78,15 @@ export default function EditOfferClient({ offer }: { offer: any }) {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0a0a", color: "#fff", fontFamily: "system-ui" }}>
-      <div style={{ borderBottom: "1px solid #222", padding: "16px 32px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ fontSize: "20px", fontWeight: 800, color: "#FFD700" }}>SweepVaults Admin</div>
-        <div style={{ display: "flex", gap: "16px" }}>
-          <Link href="/admin" style={{ color: "#888", textDecoration: "none", fontSize: "14px" }}>Dashboard</Link>
-          <Link href="/admin/offers" style={{ color: "#FFD700", textDecoration: "none", fontSize: "14px", fontWeight: 600 }}>Offers</Link>
-          <Link href="/admin/leads" style={{ color: "#888", textDecoration: "none", fontSize: "14px" }}>Leads</Link>
-        </div>
+    <div style={{ color: "#fff", minHeight: "100vh" }}>
+      <div style={{ padding: "20px 32px", borderBottom: "1px solid #1a1a1a", display: "flex", alignItems: "center", gap: "16px" }}>
+        <Link href="/admin/offers" style={{ color: "#555", textDecoration: "none", fontSize: "14px" }}>← Back</Link>
+        <div style={{ fontSize: "20px", fontWeight: 800 }}>Edit Offer</div>
       </div>
 
-      <div style={{ padding: "32px", maxWidth: "640px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "24px" }}>
-          <Link href="/admin/offers" style={{ color: "#666", textDecoration: "none", fontSize: "14px" }}>← Back</Link>
-          <div style={{ fontSize: "22px", fontWeight: 800 }}>Edit Offer</div>
-        </div>
-
+      <div style={{ padding: "28px 32px", maxWidth: "640px" }}>
         <form onSubmit={handleSubmit}>
+
           <div style={sectionStyle}>
             <div style={{ fontSize: "13px", fontWeight: 600, color: "#FFD700", marginBottom: "20px", letterSpacing: "0.08em" }}>OFFER DETAILS</div>
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -131,6 +125,22 @@ export default function EditOfferClient({ offer }: { offer: any }) {
               <div>
                 <label style={labelStyle}>PRIZE THEME</label>
                 <input style={inputStyle} value={form.prizeTheme} onChange={(e) => update("prizeTheme", e.target.value)} />
+              </div>
+            </div>
+          </div>
+
+          <div style={sectionStyle}>
+            <div style={{ fontSize: "13px", fontWeight: 600, color: "#FFD700", marginBottom: "20px", letterSpacing: "0.08em" }}>ROTATION SETTINGS</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div>
+                <label style={labelStyle}>DAILY CAP</label>
+                <input style={inputStyle} type="number" value={form.dailyCap} onChange={(e) => update("dailyCap", parseInt(e.target.value))} min={1} />
+                <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>Max leads per day for this offer</div>
+              </div>
+              <div>
+                <label style={labelStyle}>ROTATION ORDER</label>
+                <input style={inputStyle} type="number" value={form.rotationOrder} onChange={(e) => update("rotationOrder", parseInt(e.target.value))} min={0} />
+                <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>Lower = higher priority (0 = first)</div>
               </div>
             </div>
           </div>

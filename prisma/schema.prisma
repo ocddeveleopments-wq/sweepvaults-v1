@@ -19,6 +19,8 @@ model Offer {
   prizeTheme              String?
   testLeads               Int      @default(0)
   epc                     Float?
+  dailyCap                Int      @default(15)
+  rotationOrder           Int      @default(0)
   exitIntentEnabled       Boolean  @default(true)
   exitIntentMaxShows      Int      @default(2)
   exitIntentCooldownHours Int      @default(24)

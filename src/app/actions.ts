@@ -34,15 +34,41 @@ export async function saveLead(data: {
 
 export async function getActiveOffer(locale: string) {
   try {
-    const offer = await prisma.offer.findFirst({
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    // Get all active offers for this locale sorted by rotation order
+    const offers = await prisma.offer.findMany({
       where: {
         active: true,
-        languages: {
-          has: locale,
-        },
+        languages: { has: locale },
       },
+      orderBy: { rotationOrder: "asc" },
     })
-    return offer
+
+    if (offers.length === 0) return null
+
+    // Find first offer that hasn't hit its daily cap
+    for (const offer of offers) {
+      const todayLeads = await prisma.lead.count({
+        where: {
+          offerId: offer.id,
+          createdAt: { gte: today },
+        },
+      })
+
+      if (todayLeads < offer.dailyCap) {
+        return { ...offer, todayLeads, remainingToday: offer.dailyCap - todayLeads }
+      }
+    }
+
+    // All offers at cap — return last offer anyway so page still loads
+    const lastOffer = offers[offers.length - 1]
+    const todayLeads = await prisma.lead.count({
+      where: { offerId: lastOffer.id, createdAt: { gte: today } },
+    })
+    return { ...lastOffer, todayLeads, remainingToday: 0 }
+
   } catch (error) {
     console.error("getActiveOffer error:", error)
     return null

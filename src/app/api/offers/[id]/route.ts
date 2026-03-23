@@ -34,6 +34,8 @@ export async function PATCH(
         countries: body.countries,
         languages: body.languages,
         prizeTheme: body.prizeTheme ?? null,
+        dailyCap: body.dailyCap ?? 15,
+        rotationOrder: body.rotationOrder ?? 0,
         exitIntentEnabled: body.exitIntentEnabled,
         exitIntentMaxShows: body.exitIntentMaxShows,
         exitIntentCooldownHours: body.exitIntentCooldownHours,

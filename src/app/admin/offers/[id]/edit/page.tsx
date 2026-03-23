@@ -66,6 +66,9 @@ export default function OffersPage() {
                       <span>Countries: {offer.countries.join(", ")}</span>
                       <span>Languages: {offer.languages.join(", ")}</span>
                       <span>Leads: {offer._count?.leads ?? 0}</span>
+                    <span style={{ color: offer.todayLeads >= offer.dailyCap ? "#FF4500" : offer.todayLeads >= offer.dailyCap * 0.8 ? "#FFD700" : "#555" }}>
+                      Today: {offer.todayLeads ?? 0}/{offer.dailyCap ?? 15}
+                    </span>
                     </div>
                   </div>
 

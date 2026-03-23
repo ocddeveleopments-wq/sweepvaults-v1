@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Offer" ADD COLUMN     "dailyCap" INTEGER NOT NULL DEFAULT 15,
+ADD COLUMN     "rotationOrder" INTEGER NOT NULL DEFAULT 0;

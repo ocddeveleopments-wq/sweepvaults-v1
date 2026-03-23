@@ -26,6 +26,8 @@ export async function POST(req: Request) {
         countries: body.countries,
         languages: body.languages,
         prizeTheme: body.prizeTheme ?? null,
+        dailyCap: body.dailyCap ?? 15,
+        rotationOrder: body.rotationOrder ?? 0,
         exitIntentEnabled: body.exitIntentEnabled ?? true,
         exitIntentMaxShows: body.exitIntentMaxShows ?? 2,
         exitIntentCooldownHours: body.exitIntentCooldownHours ?? 24,
