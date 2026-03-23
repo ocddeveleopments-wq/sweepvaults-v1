@@ -16,7 +16,7 @@ const isAdminRoute = createRouteMatcher(["/admin(.*)"])
 export default clerkMiddleware(async (auth, req) => {
   const { pathname } = req.nextUrl
 
-  if (pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up") || pathname.startsWith("/api")) {
+if (pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up") || pathname.startsWith("/api") || pathname.startsWith("/legal") || pathname === "/robots.txt") {
     return NextResponse.next()
   }
 
