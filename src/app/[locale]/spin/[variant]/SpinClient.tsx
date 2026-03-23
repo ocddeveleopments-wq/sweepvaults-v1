@@ -203,10 +203,14 @@ export default function SpinClient({ offer, locale, variant }: { offer: Offer; l
                 <div style={{ display: "flex", justifyContent: "center" }}>
                   <Wheel onWin={handleWin} variant={variant} spinning={spinning} hasSpun={hasSpun} onSpin={handleSpin} />
                 </div>
-                <div style={{ marginTop: "16px", display: "flex", justifyContent: "center", gap: "20px" }}>
+                <div style={{ marginTop: "16px", display: "flex", justifyContent: "center", gap: "20px", flexWrap: "wrap" }}>
                   {["No purchase needed", "US residents", "18+"].map((t) => (
                     <div key={t} style={{ fontSize: "11px", color: textSecondary }}>✓ {t}</div>
                   ))}
+                </div>
+                <div style={{ marginTop: "12px", display: "flex", justifyContent: "center", gap: "16px" }}>
+                  <a href="/legal/privacy" style={{ fontSize: "11px", color: textSecondary, opacity: 0.5, textDecoration: "none" }}>Privacy Policy</a>
+                  <a href="/legal/terms" style={{ fontSize: "11px", color: textSecondary, opacity: 0.5, textDecoration: "none" }}>Terms & Conditions</a>
                 </div>
               </motion.div>
             )}
