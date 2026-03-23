@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import confetti from "canvas-confetti"
 import Wheel from "@/components/Wheel"
@@ -30,71 +30,71 @@ interface Offer {
 
 type Step = "spin" | "win" | "email" | "phone" | "done"
 
-const VARIANT_THEMES = {
+const THEMES = {
   v1: {
-    bg: "linear-gradient(160deg, #0a0800 0%, #1a1200 50%, #0a0800 100%)",
+    bg: "radial-gradient(ellipse at 50% 40%, #1a1200 0%, #080600 60%, #000 100%)",
     accent: "#FFD700",
-    accentDim: "#CFB53B",
-    cardBg: "#111008",
-    cardBorder: "#FFD70040",
-    title: "Win $25,000 Cash",
-    subtitle: "Spin the wheel — everyone's a winner",
+    accentDim: "#B8860B",
+    accentGlow: "rgba(255,215,0,0.3)",
+    accentBorder: "rgba(255,215,0,0.15)",
+    textPrimary: "#fff",
+    textSecondary: "#999",
+    isLight: false,
     winTitle: "YOU WON!",
     winColor: "#FFD700",
-    isLight: false,
-    font: "'Oswald', sans-serif",
+    subtitle: "Spin the wheel — everyone's a winner",
   },
   v2: {
-    bg: "linear-gradient(160deg, #0a0000 0%, #1a0000 50%, #0a0000 100%)",
+    bg: "radial-gradient(ellipse at 50% 40%, #1a0000 0%, #080000 60%, #000 100%)",
     accent: "#FF2222",
-    accentDim: "#CC0000",
-    cardBg: "#110000",
-    cardBorder: "#FF222240",
-    title: "Win $25,000 Cash",
-    subtitle: "Your prize is one spin away",
+    accentDim: "#AA0000",
+    accentGlow: "rgba(255,34,34,0.35)",
+    accentBorder: "rgba(255,34,34,0.15)",
+    textPrimary: "#fff",
+    textSecondary: "#999",
+    isLight: false,
     winTitle: "ON FIRE! 🔥",
     winColor: "#FF2222",
-    isLight: false,
-    font: "'Oswald', sans-serif",
+    subtitle: "Your prize is one spin away",
   },
   v3: {
-    bg: "linear-gradient(160deg, #0a0015 0%, #150025 50%, #0a0015 100%)",
+    bg: "radial-gradient(ellipse at 50% 40%, #1a0030 0%, #08000f 60%, #000 100%)",
     accent: "#A855F7",
     accentDim: "#7C3AED",
-    cardBg: "#0d0020",
-    cardBorder: "#A855F740",
-    title: "Win $25,000 Cash",
-    subtitle: "Spin to unlock your prize",
+    accentGlow: "rgba(168,85,247,0.35)",
+    accentBorder: "rgba(168,85,247,0.15)",
+    textPrimary: "#fff",
+    textSecondary: "#999",
+    isLight: false,
     winTitle: "JACKPOT! ⚡",
     winColor: "#A855F7",
-    isLight: false,
-    font: "'Oswald', sans-serif",
+    subtitle: "Spin to unlock your prize",
   },
   v4: {
-    bg: "linear-gradient(160deg, #f0fdf4 0%, #dcfce7 50%, #f0fdf4 100%)",
+    bg: "radial-gradient(ellipse at 50% 40%, #dcfce7 0%, #f0fdf4 60%, #fff 100%)",
     accent: "#059669",
     accentDim: "#047857",
-    cardBg: "#ffffff",
-    cardBorder: "#05966940",
-    title: "Win $25,000 Cash",
-    subtitle: "Free entry — no purchase necessary",
+    accentGlow: "rgba(5,150,105,0.2)",
+    accentBorder: "rgba(5,150,105,0.2)",
+    textPrimary: "#111",
+    textSecondary: "#555",
+    isLight: true,
     winTitle: "WINNER! ✓",
     winColor: "#059669",
-    isLight: true,
-    font: "'Inter', sans-serif",
+    subtitle: "Free entry — no purchase necessary",
   },
   v5: {
-    bg: "linear-gradient(160deg, #0a0000 0%, #1a0000 50%, #0a0000 100%)",
+    bg: "radial-gradient(ellipse at 50% 40%, #1a0000 0%, #080000 60%, #000 100%)",
     accent: "#FF0000",
     accentDim: "#CC0000",
-    cardBg: "#110000",
-    cardBorder: "#FF000040",
-    title: "Win $25,000 Cash",
-    subtitle: "The biggest prize of the year",
+    accentGlow: "rgba(255,0,0,0.4)",
+    accentBorder: "rgba(255,0,0,0.15)",
+    textPrimary: "#fff",
+    textSecondary: "#999",
+    isLight: false,
     winTitle: "MEGA WIN! 💥",
     winColor: "#FF0000",
-    isLight: false,
-    font: "'Oswald', sans-serif",
+    subtitle: "The biggest prize of the year",
   },
 }
 
@@ -112,19 +112,16 @@ function fireWinAnimation(variant: string) {
     confetti({ particleCount: 250, spread: 180, origin: { y: 0.5 }, colors: ["#FF2222", "#FF6666", "#FFD700", "#fff"], startVelocity: 70 })
   } else if (variant === "v3") {
     ;[0.2, 0.5, 0.8].forEach((x) => {
-      confetti({ particleCount: 100, spread: 130, origin: { x, y: 0.5 }, colors: ["#A855F7", "#EC4899", "#06B6D4", "#10B981", "#FFD700"], shapes: ["star"], startVelocity: 50 })
+      confetti({ particleCount: 100, spread: 130, origin: { x, y: 0.5 }, colors: ["#A855F7", "#EC4899", "#06B6D4", "#10B981"], shapes: ["star"], startVelocity: 50 })
     })
   } else if (variant === "v4") {
-    confetti({ particleCount: 180, spread: 100, origin: { y: 0.6 }, colors: ["#059669", "#10B981", "#fff", "#BBF7D0", "#34D399"] })
+    confetti({ particleCount: 180, spread: 100, origin: { y: 0.6 }, colors: ["#059669", "#10B981", "#fff", "#BBF7D0"] })
   } else {
-    confetti({ particleCount: 400, spread: 200, origin: { y: 0.4 }, colors: ["#FF0000", "#FFD700", "#fff", "#FF6B35", "#FF4444"], shapes: ["star", "circle"], startVelocity: 90 })
+    confetti({ particleCount: 400, spread: 200, origin: { y: 0.4 }, colors: ["#FF0000", "#FFD700", "#fff"], shapes: ["star", "circle"], startVelocity: 90 })
     setTimeout(() => {
       confetti({ particleCount: 200, spread: 160, origin: { x: 0.1, y: 0.6 }, colors: ["#FF0000", "#FFD700"] })
       confetti({ particleCount: 200, spread: 160, origin: { x: 0.9, y: 0.6 }, colors: ["#FF0000", "#FFD700"] })
     }, 400)
-    setTimeout(() => {
-      confetti({ particleCount: 150, spread: 120, origin: { x: 0.5, y: 0.3 }, colors: ["#FFD700", "#fff"] })
-    }, 800)
   }
 }
 
@@ -138,7 +135,7 @@ function getUTMParams() {
   }
 }
 
-function playSound(type: "spin" | "win" | "click") {
+function playSound(type: "win" | "click") {
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
     if (type === "click") {
@@ -151,7 +148,7 @@ function playSound(type: "spin" | "win" | "click") {
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1)
       osc.start()
       osc.stop(ctx.currentTime + 0.1)
-    } else if (type === "win") {
+    } else {
       const notes = [523, 659, 784, 1047]
       notes.forEach((freq, i) => {
         const osc = ctx.createOscillator()
@@ -183,9 +180,7 @@ export default function SpinClient({ offer, locale, variant }: { offer: Offer; l
   const [enteredToday, setEnteredToday] = useState(0)
   const [viewersNow, setViewersNow] = useState(0)
 
-  const theme = VARIANT_THEMES[variant as keyof typeof VARIANT_THEMES] ?? VARIANT_THEMES.v1
-  const textPrimary = theme.isLight ? "#111" : "#fff"
-  const textSecondary = theme.isLight ? "#555" : "#aaa"
+  const theme = THEMES[variant as keyof typeof THEMES] ?? THEMES.v1
 
   useEffect(() => {
     initPostHog()
@@ -197,34 +192,21 @@ export default function SpinClient({ offer, locale, variant }: { offer: Offer; l
     capture("page_view", { offerId: offer.id, locale, variant, sessionId: sid, visitorId: vid, returner: isReturner(), ...utms })
     trackEvent({ event: "page_view", offerId: offer.id, locale, variant, sessionId: sid, visitorId: vid })
 
-    // Dynamic social proof
     const baseSpots = Math.floor(Math.random() * 35) + 12
     setSpotsLeft(baseSpots)
     const hour = new Date().getHours()
-    const baseEntered = 1200 + hour * 180 + Math.floor(Math.random() * 300)
-    setEnteredToday(baseEntered)
+    setEnteredToday(1200 + hour * 180 + Math.floor(Math.random() * 300))
     setViewersNow(Math.floor(Math.random() * 18) + 8)
 
-    // Countdown spots
     const spotsInterval = setInterval(() => {
-      setSpotsLeft((prev) => {
-        if (prev <= 3) return prev
-        return Math.random() > 0.6 ? prev - 1 : prev
-      })
+      setSpotsLeft((p) => (p <= 3 ? p : Math.random() > 0.6 ? p - 1 : p))
     }, Math.floor(Math.random() * 7000) + 8000)
 
-    // Viewers fluctuation
     const viewersInterval = setInterval(() => {
-      setViewersNow((prev) => {
-        const delta = Math.floor(Math.random() * 3) - 1
-        return Math.max(5, Math.min(30, prev + delta))
-      })
+      setViewersNow((p) => Math.max(5, Math.min(30, p + Math.floor(Math.random() * 3) - 1)))
     }, 5000)
 
-    return () => {
-      clearInterval(spotsInterval)
-      clearInterval(viewersInterval)
-    }
+    return () => { clearInterval(spotsInterval); clearInterval(viewersInterval) }
   }, [])
 
   function handleSpin() {
@@ -236,10 +218,7 @@ export default function SpinClient({ offer, locale, variant }: { offer: Offer; l
   async function handleWin() {
     setSpinning(false)
     setHasSpun(true)
-    if (variant === "v3" || variant === "v5") {
-      setShake(true)
-      setTimeout(() => setShake(false), 600)
-    }
+    if (variant === "v3" || variant === "v5") { setShake(true); setTimeout(() => setShake(false), 600) }
     fireWinAnimation(variant)
     playSound("win")
     capture("win_reveal_shown", { offerId: offer.id, variant })
@@ -274,9 +253,7 @@ export default function SpinClient({ offer, locale, variant }: { offer: Offer; l
 
   async function handleExitIntentSubmit(emailVal: string) {
     const result = await saveLead({ offerId: offer.id, email: emailVal, locale, variant: `${variant}_exit`, sessionId, visitorId } as any)
-    if (result.success && result.leadId) {
-      await postToAffiliate(emailVal, result.leadId)
-    }
+    if (result.success && result.leadId) await postToAffiliate(emailVal, result.leadId)
   }
 
   async function handlePhoneSubmit(e: React.FormEvent) {
@@ -290,219 +267,147 @@ export default function SpinClient({ offer, locale, variant }: { offer: Offer; l
     setStep("done")
   }
 
+  const cssVars = {
+    "--accent": theme.accent,
+    "--accent-glow": theme.accentGlow,
+    "--accent-border": theme.accentBorder,
+  } as React.CSSProperties
+
   return (
     <>
       <ScrollTracker offerId={offer.id} variant={variant} locale={locale} sessionId={sessionId} visitorId={visitorId} />
       <RecentWinnersPopup accentColor={theme.accent} />
-
       {offer.exitIntentEnabled && step === "spin" && (
-        <ExitIntent
-          offerId={offer.id}
-          variant={variant}
-          maxShows={offer.exitIntentMaxShows}
-          cooldownHours={offer.exitIntentCooldownHours}
-          skipReturners={offer.exitIntentSkipReturners}
-          onSubmit={handleExitIntentSubmit}
-          accentColor={theme.accent}
-          isLight={theme.isLight}
-        />
+        <ExitIntent offerId={offer.id} variant={variant} maxShows={offer.exitIntentMaxShows} cooldownHours={offer.exitIntentCooldownHours} skipReturners={offer.exitIntentSkipReturners} onSubmit={handleExitIntentSubmit} accentColor={theme.accent} isLight={theme.isLight} />
       )}
 
       <motion.div
         animate={shake ? { x: [-8, 8, -8, 8, -4, 4, 0] } : {}}
         transition={{ duration: 0.5 }}
-        style={{
-          minHeight: "100vh",
-          background: theme.bg,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "16px",
-          fontFamily: theme.font,
-        }}
+        className="spin-page"
+        style={{ ...cssVars, background: theme.bg }}
       >
-        <div style={{ width: "100%", maxWidth: "440px" }}>
+        <div className="spin-container">
 
-          {/* Progress bar */}
           <ProgressBar step={step} accentColor={theme.accent} />
 
-          {/* Winner ticker */}
-          <div style={{ display: "flex", justifyContent: "center" }}>
+          <div className="ticker-wrap">
             <WinnerTicker accentColor={theme.accent} />
           </div>
 
-          {/* Countdown */}
-          <CountdownTimer accentColor={theme.accent} textColor={textSecondary} />
+          <CountdownTimer accentColor={theme.accent} textColor={theme.textSecondary} />
 
-          {/* Urgency bar */}
           <motion.div
-            animate={{ opacity: spotsLeft <= 10 ? [1, 0.7, 1] : 1 }}
+            className="urgency-bar"
+            animate={{ opacity: spotsLeft <= 10 ? [1, 0.65, 1] : 1 }}
             transition={{ repeat: spotsLeft <= 10 ? Infinity : 0, duration: 1.2 }}
             style={{
-              background: spotsLeft <= 10 ? "#FF2222" : theme.accent,
+              background: spotsLeft <= 10
+                ? "linear-gradient(90deg, #CC0000, #FF2222)"
+                : `linear-gradient(90deg, ${theme.accentDim}, ${theme.accent})`,
               color: "#000",
-              textAlign: "center",
-              padding: "9px 16px",
-              borderRadius: "8px",
-              fontSize: "12px",
-              fontWeight: 800,
-              letterSpacing: "0.08em",
-              marginBottom: "12px",
-              fontFamily: theme.font,
             }}
           >
-            ⚡ ONLY {spotsLeft || "?"} SPOTS REMAINING · {viewersNow} PEOPLE VIEWING NOW
+            ⚡ ONLY {spotsLeft || "?"} SPOTS REMAINING · {viewersNow} VIEWING NOW
           </motion.div>
 
-          {/* Header */}
-          <div style={{ textAlign: "center", marginBottom: "10px" }}>
-            <div style={{
-              fontSize: "32px",
-              fontWeight: 700,
-              color: theme.accent,
-              letterSpacing: "0.02em",
-              fontFamily: theme.font,
-              textTransform: "uppercase",
-              textShadow: `0 0 30px ${theme.accent}60`,
-            }}>
-              SweepVaults
-            </div>
-            <div style={{ fontSize: "13px", color: textSecondary, marginTop: "2px" }}>
-              {theme.subtitle}
-            </div>
+          <div className="spin-logo" style={{ color: theme.accent, textShadow: `0 0 40px ${theme.accentGlow}` }}>
+            SweepVaults
+          </div>
+          <div className="spin-tagline" style={{ color: theme.textSecondary }}>
+            {theme.subtitle}
           </div>
 
-          {/* Social proof */}
-          <div style={{
-            background: theme.cardBg,
-            border: `1px solid ${theme.cardBorder}`,
-            borderRadius: "8px",
-            padding: "8px 16px",
-            textAlign: "center",
-            fontSize: "12px",
-            color: textSecondary,
-            marginBottom: "16px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "16px",
-          }}>
-            <span>🔴 <span style={{ color: theme.accent, fontWeight: 700 }}>{viewersNow}</span> viewing now</span>
-            <span>·</span>
-            <span><span style={{ color: theme.accent, fontWeight: 700 }}>{enteredToday.toLocaleString()}</span> entered today</span>
+          <div className="social-bar">
+            <div className="social-item" style={{ color: theme.textSecondary }}>
+              🔴 <span style={{ color: theme.accent, fontWeight: 600 }}>{viewersNow}</span> viewing
+            </div>
+            <div className="social-item" style={{ color: theme.textSecondary }}>
+              🏆 <span style={{ color: theme.accent, fontWeight: 600 }}>{enteredToday.toLocaleString()}</span> entered today
+            </div>
           </div>
 
           <AnimatePresence mode="wait">
 
             {step === "spin" && (
-              <motion.div key="spin" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={{ textAlign: "center" }}>
-                <div style={{
-                  fontSize: "clamp(20px, 5vw, 26px)",
-                  fontWeight: 700,
-                  color: textPrimary,
-                  marginBottom: "20px",
-                  letterSpacing: "0.02em",
-                  fontFamily: theme.font,
-                  textTransform: "uppercase",
-                }}>
-                  {theme.title}
+              <motion.div key="spin" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
+                <div className="spin-title" style={{ color: theme.textPrimary }}>
+                  Win $25,000 Cash
                 </div>
-                <div style={{ display: "flex", justifyContent: "center" }}>
+                <div className="wheel-outer">
+                  <div className="wheel-glow-ring" style={{ background: `radial-gradient(circle, ${theme.accentGlow} 0%, transparent 70%)` }} />
                   <Wheel onWin={handleWin} variant={variant} spinning={spinning} hasSpun={hasSpun} onSpin={handleSpin} />
                 </div>
-                <SecurityBadges accentColor={theme.accent} textColor={textSecondary} />
-                <div style={{ marginTop: "16px", display: "flex", justifyContent: "center", gap: "16px", flexWrap: "wrap" }}>
+                <SecurityBadges accentColor={theme.accent} textColor={theme.textSecondary} />
+                <div className="trust-row">
                   {["No purchase needed", "US residents", "18+"].map((t) => (
-                    <div key={t} style={{ fontSize: "11px", color: textSecondary }}>✓ {t}</div>
+                    <div key={t} className="trust-item" style={{ color: theme.textSecondary }}>✓ {t}</div>
                   ))}
                 </div>
-                <div style={{ marginTop: "10px", display: "flex", justifyContent: "center", gap: "16px" }}>
-                  <a href="/legal/privacy" style={{ fontSize: "11px", color: textSecondary, opacity: 0.4, textDecoration: "none" }}>Privacy Policy</a>
-                  <a href="/legal/terms" style={{ fontSize: "11px", color: textSecondary, opacity: 0.4, textDecoration: "none" }}>Terms</a>
+                <div className="legal-row">
+                  <a href="/legal/privacy" style={{ color: theme.textSecondary }}>Privacy Policy</a>
+                  <a href="/legal/terms" style={{ color: theme.textSecondary }}>Terms</a>
                 </div>
               </motion.div>
             )}
 
             {step === "win" && (
-              <motion.div key="win" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} style={{ textAlign: "center", padding: "40px 0" }}>
+              <motion.div key="win" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="win-screen">
                 <motion.div animate={{ scale: [1, 1.2, 1], rotate: [0, -5, 5, 0] }} transition={{ repeat: Infinity, duration: 1.5 }} style={{ fontSize: "80px", marginBottom: "16px" }}>🏆</motion.div>
-                <div style={{ fontSize: "clamp(36px, 10vw, 56px)", fontWeight: 700, color: theme.winColor, fontFamily: theme.font, textTransform: "uppercase", textShadow: `0 0 40px ${theme.winColor}80` }}>
+                <div className="win-title" style={{ color: theme.winColor, textShadow: `0 0 40px ${theme.accentGlow}` }}>
                   {theme.winTitle}
                 </div>
-                <div style={{ fontSize: "18px", color: textPrimary, marginTop: "8px" }}>Claim your prize now</div>
+                <div className="win-sub" style={{ color: theme.textPrimary }}>Claim your prize now</div>
               </motion.div>
             )}
 
             {step === "email" && (
-              <motion.div key="email" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={{ background: theme.cardBg, border: `1px solid ${theme.cardBorder}`, borderRadius: "20px", padding: "28px 24px" }}>
-                <div style={{ textAlign: "center", marginBottom: "20px" }}>
-                  <div style={{ fontSize: "48px", marginBottom: "8px" }}>🎁</div>
-                  <div style={{ fontSize: "22px", fontWeight: 700, color: textPrimary, fontFamily: theme.font, textTransform: "uppercase" }}>Claim Your Prize!</div>
-                  <div style={{ fontSize: "14px", color: textSecondary, marginTop: "6px" }}>Enter your email to receive your winnings</div>
+              <motion.div key="email" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className={theme.isLight ? "glass-card-light" : "glass-card"}>
+                <div style={{ textAlign: "center", marginBottom: "22px" }}>
+                  <div style={{ fontSize: "52px", marginBottom: "10px" }}>🎁</div>
+                  <div className="spin-title" style={{ color: theme.textPrimary, fontSize: "22px", marginBottom: "6px" }}>Claim Your Prize!</div>
+                  <div style={{ fontSize: "14px", color: theme.textSecondary }}>Enter your email to receive your winnings</div>
                 </div>
                 <form onSubmit={handleEmailSubmit}>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="your@email.com"
-                    required
-                    style={{ width: "100%", padding: "14px 16px", borderRadius: "12px", border: `2px solid ${theme.accent}`, background: "transparent", color: textPrimary, fontSize: "16px", marginBottom: "12px", outline: "none", boxSizing: "border-box" }}
-                  />
-                  <motion.button
-                    type="submit"
-                    disabled={loading}
-                    whileTap={{ scale: 0.97 }}
-                    style={{ width: "100%", padding: "16px", background: loading ? "#333" : theme.accent, color: loading ? "#666" : "#000", fontWeight: 800, fontSize: "16px", border: "none", borderRadius: "12px", cursor: loading ? "not-allowed" : "pointer", letterSpacing: "0.04em", fontFamily: theme.font, textTransform: "uppercase", boxShadow: loading ? "none" : `0 8px 24px ${theme.accent}40` }}
-                  >
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" required className={theme.isLight ? "spin-input-light" : "spin-input"} style={{ color: theme.textPrimary }} />
+                  <motion.button type="submit" disabled={loading} whileTap={{ scale: 0.97 }} className="spin-cta" style={{ background: loading ? "#333" : `linear-gradient(135deg, ${theme.accentDim}, ${theme.accent})`, color: loading ? "#666" : "#000", boxShadow: loading ? "none" : `0 8px 28px ${theme.accentGlow}` }}>
                     {loading ? "Processing..." : "CLAIM MY PRIZE →"}
                   </motion.button>
                 </form>
-                <div style={{ fontSize: "11px", color: textSecondary, textAlign: "center", marginTop: "12px", opacity: 0.6 }}>
-                  By entering you agree to our <a href="/legal/terms" style={{ color: textSecondary }}>terms</a>. No spam ever.
+                <div style={{ fontSize: "11px", color: theme.textSecondary, textAlign: "center", marginTop: "12px", opacity: 0.5 }}>
+                  By entering you agree to our <a href="/legal/terms" style={{ color: theme.textSecondary }}>terms</a>. No spam ever.
                 </div>
               </motion.div>
             )}
 
             {step === "phone" && (
-              <motion.div key="phone" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} style={{ background: theme.cardBg, border: `1px solid ${theme.cardBorder}`, borderRadius: "20px", padding: "28px 24px" }}>
-                <div style={{ textAlign: "center", marginBottom: "20px" }}>
-                  <div style={{ fontSize: "48px", marginBottom: "8px" }}>📱</div>
-                  <div style={{ fontSize: "22px", fontWeight: 700, color: textPrimary, fontFamily: theme.font, textTransform: "uppercase" }}>Double Your Chances!</div>
-                  <div style={{ display: "inline-block", background: theme.accent, color: "#000", fontWeight: 800, fontSize: "12px", padding: "4px 14px", borderRadius: "20px", marginTop: "8px", letterSpacing: "0.06em" }}>2× MORE ENTRIES</div>
-                  <div style={{ fontSize: "14px", color: textSecondary, marginTop: "10px" }}>Add your phone number for twice the chances to win</div>
+              <motion.div key="phone" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className={theme.isLight ? "glass-card-light" : "glass-card"}>
+                <div style={{ textAlign: "center", marginBottom: "22px" }}>
+                  <div style={{ fontSize: "52px", marginBottom: "10px" }}>📱</div>
+                  <div className="spin-title" style={{ color: theme.textPrimary, fontSize: "22px", marginBottom: "8px" }}>Double Your Chances!</div>
+                  <div className="upsell-badge" style={{ background: theme.accent, color: "#000" }}>2× MORE ENTRIES</div>
+                  <div style={{ fontSize: "14px", color: theme.textSecondary, marginTop: "10px" }}>Add your phone for twice the chances to win</div>
                 </div>
                 <form onSubmit={handlePhoneSubmit}>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+1 (555) 000-0000"
-                    style={{ width: "100%", padding: "14px 16px", borderRadius: "12px", border: `2px solid ${theme.accent}`, background: "transparent", color: textPrimary, fontSize: "16px", marginBottom: "12px", outline: "none", boxSizing: "border-box" }}
-                  />
-                  <motion.button
-                    type="submit"
-                    disabled={loading}
-                    whileTap={{ scale: 0.97 }}
-                    style={{ width: "100%", padding: "16px", background: loading ? "#333" : theme.accent, color: loading ? "#666" : "#000", fontWeight: 800, fontSize: "16px", border: "none", borderRadius: "12px", cursor: loading ? "not-allowed" : "pointer", letterSpacing: "0.04em", fontFamily: theme.font, textTransform: "uppercase", boxShadow: loading ? "none" : `0 8px 24px ${theme.accent}40` }}
-                  >
+                  <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 (555) 000-0000" className={theme.isLight ? "spin-input-light" : "spin-input"} style={{ color: theme.textPrimary }} />
+                  <motion.button type="submit" disabled={loading} whileTap={{ scale: 0.97 }} className="spin-cta" style={{ background: loading ? "#333" : `linear-gradient(135deg, ${theme.accentDim}, ${theme.accent})`, color: loading ? "#666" : "#000", boxShadow: loading ? "none" : `0 8px 28px ${theme.accentGlow}` }}>
                     {loading ? "Processing..." : "2× MY ENTRIES →"}
                   </motion.button>
                 </form>
-                <button onClick={() => setStep("done")} style={{ width: "100%", background: "transparent", border: "none", color: textSecondary, fontSize: "13px", marginTop: "12px", cursor: "pointer", padding: "8px", opacity: 0.6 }}>
+                <button onClick={() => setStep("done")} className="skip-btn" style={{ color: theme.textSecondary }}>
                   No thanks, skip
                 </button>
               </motion.div>
             )}
 
             {step === "done" && (
-              <motion.div key="done" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: "center", padding: "40px 0" }}>
+              <motion.div key="done" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="done-screen">
                 <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: 3, duration: 0.5 }} style={{ fontSize: "80px", marginBottom: "16px" }}>✅</motion.div>
-                <div style={{ fontSize: "32px", fontWeight: 700, color: textPrimary, fontFamily: theme.font, textTransform: "uppercase" }}>You&apos;re Entered!</div>
-                <div style={{ fontSize: "15px", color: textSecondary, marginTop: "8px" }}>We&apos;ll contact you if you win. Good luck!</div>
-                <div style={{ marginTop: "24px", padding: "16px", background: theme.cardBg, border: `1px solid ${theme.cardBorder}`, borderRadius: "12px" }}>
-                  <div style={{ fontSize: "12px", color: textSecondary, marginBottom: "4px" }}>Your entry number</div>
-                  <div style={{ fontSize: "20px", fontWeight: 700, color: theme.accent, fontFamily: "monospace" }}>
+                <div className="win-title" style={{ color: theme.textPrimary, fontSize: "32px" }}>You&apos;re Entered!</div>
+                <div className="win-sub" style={{ color: theme.textSecondary }}>We&apos;ll contact you if you win. Good luck!</div>
+                <div className="entry-card">
+                  <div className="entry-label" style={{ color: theme.textSecondary }}>Your entry number</div>
+                  <div className="entry-num" style={{ color: theme.accent }}>
                     #{Math.floor(Math.random() * 90000) + 10000}
                   </div>
                 </div>
