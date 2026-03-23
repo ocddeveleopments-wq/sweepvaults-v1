@@ -11,6 +11,11 @@ export async function saveLead(data: {
   variant: string
   ip?: string
   country?: string
+  sessionId?: string
+  visitorId?: string
+  utm_source?: string
+  utm_medium?: string
+  utm_campaign?: string
 }) {
   try {
     const lead = await prisma.lead.create({
@@ -23,6 +28,9 @@ export async function saveLead(data: {
         variant: data.variant,
         ip: data.ip,
         country: data.country,
+        utmSource: data.utm_source,
+        utmMedium: data.utm_medium,
+        utmCampaign: data.utm_campaign,
       },
     })
     return { success: true, leadId: lead.id }
