@@ -227,7 +227,7 @@ export default function SpinClient({ offer, locale, variant }: { offer: Offer; l
   }
 
   async function postToAffiliate(emailVal: string, leadId: string) {
-    if (!offer.affiliatePostUrl || process.env.NODE_ENV !== "production") return
+    if (!offer.affiliatePostUrl || process.env.NEXT_PUBLIC_TEST_MODE === "true") return
     try {
       const url = new URL(offer.affiliatePostUrl)
       url.searchParams.set("email", emailVal)
