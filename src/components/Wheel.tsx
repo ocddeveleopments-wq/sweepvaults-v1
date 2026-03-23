@@ -127,7 +127,7 @@ export default function Wheel({ onWin, variant = "v1", spinning, hasSpun, onSpin
     ctx.fill()
     ctx.restore()
 
-    // Outer ring gradient
+    // Outer ring
     ctx.beginPath()
     ctx.arc(cx, cy, radius + 12, 0, 2 * Math.PI)
     const outerGrad = ctx.createLinearGradient(cx - radius, cy - radius, cx + radius, cy + radius)
@@ -169,17 +169,15 @@ export default function Wheel({ onWin, variant = "v1", spinning, hasSpun, onSpin
         ctx.fill()
       }
 
-      // TEXT — centered in segment
+      // Text — centered in segment
       ctx.save()
       ctx.translate(cx, cy)
       ctx.rotate(midAngle)
       ctx.textAlign = "center"
       ctx.textBaseline = "middle"
-
       const isShort = seg.label.length <= 4
       const isMedium = seg.label.length <= 7
       const fontSize = isShort ? 16 : isMedium ? 14 : 12
-
       ctx.font = `900 ${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`
       ctx.shadowColor = "rgba(0,0,0,0.9)"
       ctx.shadowBlur = 6
@@ -210,7 +208,7 @@ export default function Wheel({ onWin, variant = "v1", spinning, hasSpun, onSpin
     ctx.fillText("★", cx, cy)
     ctx.shadowBlur = 0
 
-    // Notches
+    // Notches on outer ring
     for (let i = 0; i < config.segments.length; i++) {
       const angle = rotation + i * segmentAngle
       ctx.beginPath()
@@ -273,7 +271,7 @@ export default function Wheel({ onWin, variant = "v1", spinning, hasSpun, onSpin
           </svg>
         </div>
 
-        {/* Glow */}
+        {/* Glow behind wheel */}
         <div style={{
           position: "absolute",
           inset: "-20px",
@@ -289,6 +287,36 @@ export default function Wheel({ onWin, variant = "v1", spinning, hasSpun, onSpin
           style={{ borderRadius: "50%", display: "block", position: "relative", zIndex: 1 }}
         />
       </div>
+
+      {/* Spin button */}
+      <motion.button
+        onClick={handleSpin}
+        disabled={spinning || hasSpun}
+        whileTap={{ scale: 0.95 }}
+        whileHover={{ scale: spinning || hasSpun ? 1 : 1.05 }}
+        style={{
+          padding: "16px 48px",
+          borderRadius: "50px",
+          fontWeight: 900,
+          fontSize: "18px",
+          border: "none",
+          cursor: spinning || hasSpun ? "not-allowed" : "pointer",
+          letterSpacing: "0.08em",
+          fontFamily: "'Oswald', sans-serif",
+          background: spinning || hasSpun
+            ? "#333"
+            : `linear-gradient(135deg, ${config.outerRing}, ${config.innerRing})`,
+          color: spinning || hasSpun ? "#666" : "#fff",
+          boxShadow: spinning || hasSpun
+            ? "none"
+            : `0 8px 32px ${config.shadowColor}, 0 2px 8px rgba(0,0,0,0.4)`,
+          transition: "all 0.2s",
+          textShadow: "0 1px 3px rgba(0,0,0,0.5)",
+          textTransform: "uppercase" as const,
+        }}
+      >
+        {spinning ? "SPINNING..." : hasSpun ? "ENTERED! ✓" : "🎰 SPIN TO WIN FREE"}
+      </motion.button>
     </div>
   )
 }
