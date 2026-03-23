@@ -29,17 +29,22 @@ model Offer {
 }
 
 model Lead {
-  id        String   @id @default(cuid())
-  offerId   String
-  email     String?
-  phone     String?
-  subId     String?
-  locale    String   @default("en")
-  variant   String?
-  ip        String?
-  country   String?
-  createdAt DateTime @default(now())
-  offer     Offer    @relation(fields: [offerId], references: [id])
+  id          String   @id @default(cuid())
+  offerId     String
+  email       String?
+  phone       String?
+  subId       String?
+  locale      String   @default("en")
+  variant     String?
+  ip          String?
+  country     String?
+  converted   Boolean  @default(false)
+  convertedAt DateTime?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  createdAt   DateTime @default(now())
+  offer       Offer    @relation(fields: [offerId], references: [id])
 }
 
 model AnalyticsEvent {
