@@ -233,8 +233,8 @@ export default function SpinClient({ offer, locale, variant }: { offer: Offer; l
   try {
     const url = new URL(offer.affiliatePostUrl)
     url.searchParams.set("email", emailVal)
-    url.searchParams.set("firstName", first)
-    url.searchParams.set("lastName", last)
+    if (first) url.searchParams.set("firstName", first)
+    if (last) url.searchParams.set("lastName", last)
     if (offer.subParam) url.searchParams.set(offer.subParam, leadId)
     fetch(url.toString(), { mode: "no-cors" }).catch(() => {})
   } catch {}
