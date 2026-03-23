@@ -1,0 +1,8 @@
+User-agent: *
+Disallow: /en/spin/
+Disallow: /fr/spin/
+Disallow: /admin/
+Disallow: /api/
+Allow: /
+
+Sitemap: https://www.sweepvaults.com/sitemap.xml
