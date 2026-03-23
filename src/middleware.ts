@@ -1,33 +1,22 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server"
-import createIntlMiddleware from "next-intl/middleware"
 import { NextResponse } from "next/server"
+import createIntlMiddleware from "next-intl/middleware"
 
 const locales = ["en", "fr"]
 const defaultLocale = "en"
 
-const intlMiddleware = createIntlMiddleware({
+const handleI18n = createIntlMiddleware({
   locales,
   defaultLocale,
   localePrefix: "always",
 })
 
 const isAdminRoute = createRouteMatcher(["/admin(.*)"])
-const isPublicRoute = createRouteMatcher([
-  "/sign-in(.*)",
-  "/sign-up(.*)",
-  "/en/(.*)",
-  "/fr/(.*)",
-  "/api/(.*)",
-])
 
 export default clerkMiddleware(async (auth, req) => {
   const { pathname } = req.nextUrl
 
-  // Skip intl middleware for sign-in/sign-up and api routes
   if (pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up") || pathname.startsWith("/api")) {
-    if (isAdminRoute(req)) {
-      await auth.protect()
-    }
     return NextResponse.next()
   }
 
@@ -36,7 +25,7 @@ export default clerkMiddleware(async (auth, req) => {
     return NextResponse.next()
   }
 
-  return intlMiddleware(req)
+  return handleI18n(req)
 })
 
 export const config = {
