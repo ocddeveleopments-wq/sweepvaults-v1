@@ -17,7 +17,7 @@ interface ExitIntentProps {
   maxShows: number
   cooldownHours: number
   skipReturners: boolean
-  onSubmit: (email: string) => void
+  onSubmit: (email: string, firstName: string, lastName: string) => void
   accentColor: string
   isLight?: boolean
 }
@@ -34,6 +34,8 @@ export default function ExitIntent({
 }: ExitIntentProps) {
   const [visible, setVisible] = useState(false)
   const [email, setEmail] = useState("")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
   const [scrollDepth, setScrollDepth] = useState(0)
   const [triggered, setTriggered] = useState(false)
 
@@ -80,8 +82,8 @@ export default function ExitIntent({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!email) return
-    onSubmit(email)
+    if (!email || !firstName || !lastName) return
+    onSubmit(email, firstName, lastName)
     setVisible(false)
     capture("exit_intent_submitted", { offerId, variant, email })
   }
@@ -91,25 +93,32 @@ export default function ExitIntent({
   const bgColor = isLight ? "#fff" : "#0d0d0d"
   const borderColor = isLight ? "#e5e5e5" : "#222"
 
+  const inputStyle = {
+    width: "100%",
+    padding: "12px 14px",
+    borderRadius: "12px",
+    border: `1.5px solid ${accentColor}`,
+    background: "transparent",
+    color: textColor,
+    fontSize: "15px",
+    marginBottom: "10px",
+    outline: "none",
+    boxSizing: "border-box" as const,
+    fontFamily: "Inter, sans-serif",
+  }
+
   return (
     <AnimatePresence>
       {visible && (
         <>
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
-            style={{
-              position: "fixed", inset: 0,
-              background: "rgba(0,0,0,0.85)",
-              zIndex: 999,
-              backdropFilter: "blur(4px)",
-            }}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 999, backdropFilter: "blur(4px)" }}
           />
 
-          {/* Modal */}
           <motion.div
             initial={{ opacity: 0, scale: 0.85, y: 40 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -124,110 +133,44 @@ export default function ExitIntent({
               background: bgColor,
               border: `1px solid ${borderColor}`,
               borderRadius: "24px",
-              padding: "36px 28px",
+              padding: "32px 24px",
               textAlign: "center",
             }}
           >
-            {/* Close button */}
-            <button
-              onClick={handleClose}
-              style={{
-                position: "absolute", top: "16px", right: "16px",
-                background: "transparent", border: "none",
-                color: subColor, fontSize: "20px", cursor: "pointer",
-                width: "32px", height: "32px", borderRadius: "50%",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}
-            >
+            <button onClick={handleClose} style={{ position: "absolute", top: "16px", right: "16px", background: "transparent", border: "none", color: subColor, fontSize: "20px", cursor: "pointer" }}>
               ✕
             </button>
 
-            {/* Icon */}
-            <motion.div
-              animate={{ rotate: [0, -10, 10, -10, 0] }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              style={{ fontSize: "56px", marginBottom: "16px" }}
-            >
+            <motion.div animate={{ rotate: [0, -10, 10, -10, 0] }} transition={{ duration: 0.5, delay: 0.3 }} style={{ fontSize: "52px", marginBottom: "14px" }}>
               🚨
             </motion.div>
 
-            {/* Headline */}
-            <div style={{ fontSize: "24px", fontWeight: 900, color: accentColor, marginBottom: "8px", lineHeight: 1.2 }}>
+            <div style={{ fontSize: "22px", fontWeight: 900, color: accentColor, marginBottom: "6px", lineHeight: 1.2, fontFamily: "Oswald, sans-serif", textTransform: "uppercase" as const }}>
               Wait! Don&apos;t leave yet!
             </div>
-            <div style={{ fontSize: "15px", color: textColor, marginBottom: "6px", fontWeight: 600 }}>
+            <div style={{ fontSize: "14px", color: textColor, marginBottom: "6px", fontWeight: 600 }}>
               Your prize is still unclaimed
             </div>
-            <div style={{ fontSize: "13px", color: subColor, marginBottom: "24px", lineHeight: 1.6 }}>
-              Enter your email below and we&apos;ll hold your spot for the next 24 hours.
+            <div style={{ fontSize: "13px", color: subColor, marginBottom: "20px", lineHeight: 1.6 }}>
+              Enter your details below and we&apos;ll hold your spot for 24 hours.
             </div>
 
-            {/* Urgency bar */}
-            <div style={{
-              background: accentColor,
-              color: "#000",
-              borderRadius: "8px",
-              padding: "8px 16px",
-              fontSize: "12px",
-              fontWeight: 800,
-              letterSpacing: "0.06em",
-              marginBottom: "20px",
-            }}>
+            <div style={{ background: accentColor, color: "#000", borderRadius: "8px", padding: "8px 16px", fontSize: "12px", fontWeight: 800, letterSpacing: "0.06em", marginBottom: "18px", fontFamily: "Oswald, sans-serif" }}>
               ⚡ ONLY 3 SPOTS LEFT TODAY
             </div>
 
-            {/* Form */}
             <form onSubmit={handleSubmit}>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                required
-                style={{
-                  width: "100%",
-                  padding: "14px 16px",
-                  borderRadius: "12px",
-                  border: `1.5px solid ${accentColor}`,
-                  background: "transparent",
-                  color: textColor,
-                  fontSize: "15px",
-                  marginBottom: "12px",
-                  outline: "none",
-                  boxSizing: "border-box",
-                }}
-              />
-              <button
-                type="submit"
-                style={{
-                  width: "100%",
-                  padding: "15px",
-                  background: accentColor,
-                  color: "#000",
-                  fontWeight: 900,
-                  fontSize: "15px",
-                  border: "none",
-                  borderRadius: "12px",
-                  cursor: "pointer",
-                  letterSpacing: "0.04em",
-                }}
-              >
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" required style={inputStyle} />
+                <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" required style={inputStyle} />
+              </div>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" required style={inputStyle} />
+              <button type="submit" style={{ width: "100%", padding: "15px", background: accentColor, color: "#000", fontWeight: 900, fontSize: "15px", border: "none", borderRadius: "12px", cursor: "pointer", letterSpacing: "0.04em", fontFamily: "Oswald, sans-serif", textTransform: "uppercase" as const }}>
                 CLAIM MY SPOT →
               </button>
             </form>
 
-            <button
-              onClick={handleClose}
-              style={{
-                background: "transparent",
-                border: "none",
-                color: subColor,
-                fontSize: "12px",
-                marginTop: "12px",
-                cursor: "pointer",
-                padding: "8px",
-              }}
-            >
+            <button onClick={handleClose} style={{ background: "transparent", border: "none", color: subColor, fontSize: "12px", marginTop: "12px", cursor: "pointer", padding: "8px" }}>
               No thanks, I don&apos;t want to win
             </button>
           </motion.div>

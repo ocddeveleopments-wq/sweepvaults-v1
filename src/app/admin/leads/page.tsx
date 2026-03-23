@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma"
-import Link from "next/link"
 
 export const dynamic = "force-dynamic"
 
@@ -34,7 +33,7 @@ export default async function LeadsPage() {
 
       <div style={{ padding: "28px 32px" }}>
 
-        {/* Postback setup info */}
+        {/* Postback URL */}
         <div style={{ background: "#0d1a0d", border: "1px solid #22C55E30", borderRadius: "12px", padding: "16px 20px", marginBottom: "24px" }}>
           <div style={{ fontSize: "12px", fontWeight: 700, color: "#22C55E", marginBottom: "6px", letterSpacing: "0.08em" }}>MAXBOUNTY POSTBACK URL</div>
           <div style={{ fontFamily: "monospace", fontSize: "12px", color: "#aaa", background: "#0a0a0a", padding: "10px 14px", borderRadius: "6px", marginBottom: "8px", wordBreak: "break-all" }}>
@@ -52,7 +51,7 @@ export default async function LeadsPage() {
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
               <thead>
                 <tr style={{ background: "#0d0d0d" }}>
-                  {["Status", "Email", "Phone", "Variant", "Offer", "Payout", "UTM Source", "Date"].map((h) => (
+                  {["Status", "Name", "Email", "Phone", "Variant", "Offer", "Payout", "UTM Source", "Date"].map((h) => (
                     <th key={h} style={{ padding: "12px 16px", textAlign: "left", color: "#444", fontWeight: 500, fontSize: "11px", letterSpacing: "0.08em", borderBottom: "1px solid #1a1a1a" }}>
                       {h.toUpperCase()}
                     </th>
@@ -73,6 +72,9 @@ export default async function LeadsPage() {
                         </span>
                       )}
                     </td>
+                    <td style={{ padding: "12px 16px", color: "#fff", whiteSpace: "nowrap" }}>
+                      {lead.firstName ? `${lead.firstName} ${lead.lastName}` : "—"}
+                    </td>
                     <td style={{ padding: "12px 16px", color: "#22C55E" }}>{lead.email ?? "—"}</td>
                     <td style={{ padding: "12px 16px", color: lead.phone ? "#FF4500" : "#333" }}>{lead.phone ?? "—"}</td>
                     <td style={{ padding: "12px 16px" }}>
@@ -83,7 +85,7 @@ export default async function LeadsPage() {
                     <td style={{ padding: "12px 16px", color: "#666", maxWidth: "160px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{lead.offer.title}</td>
                     <td style={{ padding: "12px 16px", color: "#FFD700", fontWeight: 700 }}>${lead.offer.payout.toFixed(2)}</td>
                     <td style={{ padding: "12px 16px", color: "#555" }}>{lead.utmSource ?? "—"}</td>
-                    <td style={{ padding: "12px 16px", color: "#444" }}>
+                    <td style={{ padding: "12px 16px", color: "#444", whiteSpace: "nowrap" }}>
                       {new Date(lead.createdAt).toLocaleDateString()} {new Date(lead.createdAt).toLocaleTimeString()}
                     </td>
                   </tr>

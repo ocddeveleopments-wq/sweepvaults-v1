@@ -169,6 +169,8 @@ function playSound(type: "win" | "click") {
 export default function SpinClient({ offer, locale, variant }: { offer: Offer; locale: string; variant: string }) {
   const [step, setStep] = useState<Step>("spin")
   const [email, setEmail] = useState("")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
   const [phone, setPhone] = useState("")
   const [loading, setLoading] = useState(false)
   const [spinning, setSpinning] = useState(false)
@@ -226,35 +228,47 @@ export default function SpinClient({ offer, locale, variant }: { offer: Offer; l
     setTimeout(() => setStep("email"), 2800)
   }
 
-  async function postToAffiliate(emailVal: string, leadId: string) {
-    if (!offer.affiliatePostUrl || process.env.NEXT_PUBLIC_TEST_MODE === "true") return
-    try {
-      const url = new URL(offer.affiliatePostUrl)
-      url.searchParams.set("email", emailVal)
-      if (offer.subParam) url.searchParams.set(offer.subParam, leadId)
-      fetch(url.toString(), { mode: "no-cors" }).catch(() => {})
-    } catch {}
-  }
+  async function postToAffiliate(emailVal: string, leadId: string, first: string, last: string) {
+  if (!offer.affiliatePostUrl || process.env.NEXT_PUBLIC_TEST_MODE === "true") return
+  try {
+    const url = new URL(offer.affiliatePostUrl)
+    url.searchParams.set("email", emailVal)
+    url.searchParams.set("firstName", first)
+    url.searchParams.set("lastName", last)
+    if (offer.subParam) url.searchParams.set(offer.subParam, leadId)
+    fetch(url.toString(), { mode: "no-cors" }).catch(() => {})
+  } catch {}
+}
 
   async function handleEmailSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!email) return
-    setLoading(true)
-    playSound("click")
-    const utms = getUTMParams()
-    const result = await saveLead({ offerId: offer.id, email, locale, variant, sessionId, visitorId, ...utms } as any)
-    if (result.success && result.leadId) {
-      capture("email_submitted", { offerId: offer.id, variant, locale })
-      await postToAffiliate(email, result.leadId)
-    }
-    setLoading(false)
-    setStep("phone")
+  e.preventDefault()
+  if (!email || !firstName || !lastName) return
+  setLoading(true)
+  playSound("click")
+  const utms = getUTMParams()
+  const result = await saveLead({
+    offerId: offer.id,
+    email,
+    firstName,
+    lastName,
+    locale,
+    variant,
+    sessionId,
+    visitorId,
+    ...utms,
+  } as any)
+  if (result.success && result.leadId) {
+    capture("email_submitted", { offerId: offer.id, variant, locale })
+    await postToAffiliate(email, result.leadId, firstName, lastName)
   }
+  setLoading(false)
+  setStep("phone")
+}
 
-  async function handleExitIntentSubmit(emailVal: string) {
-    const result = await saveLead({ offerId: offer.id, email: emailVal, locale, variant: `${variant}_exit`, sessionId, visitorId } as any)
-    if (result.success && result.leadId) await postToAffiliate(emailVal, result.leadId)
-  }
+  async function handleExitIntentSubmit(email: string, firstName: string, lastName: string) {
+  const result = await saveLead({ offerId: offer.id, email, firstName, lastName, locale, variant: `${variant}_exit`, sessionId, visitorId } as any)
+  if (result.success && result.leadId) await postToAffiliate(email, result.leadId, firstName, lastName)
+}
 
   async function handlePhoneSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -369,11 +383,49 @@ export default function SpinClient({ offer, locale, variant }: { offer: Offer; l
                   <div style={{ fontSize: "14px", color: theme.textSecondary }}>Enter your email to receive your winnings</div>
                 </div>
                 <form onSubmit={handleEmailSubmit}>
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" required className={theme.isLight ? "spin-input-light" : "spin-input"} style={{ color: theme.textPrimary }} />
-                  <motion.button type="submit" disabled={loading} whileTap={{ scale: 0.97 }} className="spin-cta" style={{ background: loading ? "#333" : `linear-gradient(135deg, ${theme.accentDim}, ${theme.accent})`, color: loading ? "#666" : "#000", boxShadow: loading ? "none" : `0 8px 28px ${theme.accentGlow}` }}>
-                    {loading ? "Processing..." : "CLAIM MY PRIZE →"}
-                  </motion.button>
-                </form>
+  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "0" }}>
+    <input
+      type="text"
+      value={firstName}
+      onChange={(e) => setFirstName(e.target.value)}
+      placeholder="First name"
+      required
+      className={theme.isLight ? "spin-input-light" : "spin-input"}
+      style={{ color: theme.textPrimary }}
+    />
+    <input
+      type="text"
+      value={lastName}
+      onChange={(e) => setLastName(e.target.value)}
+      placeholder="Last name"
+      required
+      className={theme.isLight ? "spin-input-light" : "spin-input"}
+      style={{ color: theme.textPrimary }}
+    />
+  </div>
+  <input
+    type="email"
+    value={email}
+    onChange={(e) => setEmail(e.target.value)}
+    placeholder="your@email.com"
+    required
+    className={theme.isLight ? "spin-input-light" : "spin-input"}
+    style={{ color: theme.textPrimary }}
+  />
+  <motion.button
+    type="submit"
+    disabled={loading}
+    whileTap={{ scale: 0.97 }}
+    className="spin-cta"
+    style={{
+      background: loading ? "#333" : `linear-gradient(135deg, ${theme.accentDim}, ${theme.accent})`,
+      color: loading ? "#666" : "#000",
+      boxShadow: loading ? "none" : `0 8px 28px ${theme.accentGlow}`,
+    }}
+  >
+    {loading ? "Processing..." : "CLAIM MY PRIZE →"}
+  </motion.button>
+</form>
                 <div style={{ fontSize: "11px", color: theme.textSecondary, textAlign: "center", marginTop: "12px", opacity: 0.5 }}>
                   By entering you agree to our <a href="/legal/terms" style={{ color: theme.textSecondary }}>terms</a>. No spam ever.
                 </div>

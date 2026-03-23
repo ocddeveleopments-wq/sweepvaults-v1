@@ -33,6 +33,8 @@ model Offer {
 model Lead {
   id          String   @id @default(cuid())
   offerId     String
+  firstName   String?
+  lastName    String?
   email       String?
   phone       String?
   subId       String?

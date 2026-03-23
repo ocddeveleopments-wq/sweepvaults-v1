@@ -6,6 +6,8 @@ export async function saveLead(data: {
   offerId: string
   email?: string
   phone?: string
+  firstName?: string
+  lastName?: string
   subId?: string
   locale: string
   variant: string
@@ -23,6 +25,8 @@ export async function saveLead(data: {
         offerId: data.offerId,
         email: data.email,
         phone: data.phone,
+        firstName: data.firstName,
+        lastName: data.lastName,
         subId: data.subId,
         locale: data.locale,
         variant: data.variant,
