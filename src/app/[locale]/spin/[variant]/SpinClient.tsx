@@ -42,7 +42,7 @@ const THEMES = {
     isLight: false,
     winTitle: "YOU WON!",
     winColor: "#FFD700",
-    subtitle: "Spin the wheel — everyone's a winner",
+    subtitle: "Spin the wheel for your chance to win",
   },
   v2: {
     bg: "radial-gradient(ellipse at 50% 40%, #1a0000 0%, #080000 60%, #000 100%)",
@@ -53,9 +53,9 @@ const THEMES = {
     textPrimary: "#fff",
     textSecondary: "#999",
     isLight: false,
-    winTitle: "ON FIRE! 🔥",
+    winTitle: "YOU WON!",
     winColor: "#FF2222",
-    subtitle: "Your prize is one spin away",
+    subtitle: "Your chance to win $25,000 cash",
   },
   v3: {
     bg: "radial-gradient(ellipse at 50% 40%, #1a0030 0%, #08000f 60%, #000 100%)",
@@ -66,9 +66,9 @@ const THEMES = {
     textPrimary: "#fff",
     textSecondary: "#999",
     isLight: false,
-    winTitle: "JACKPOT! ⚡",
+    winTitle: "YOU WON!",
     winColor: "#A855F7",
-    subtitle: "Spin to unlock your prize",
+    subtitle: "Spin to enter the sweepstakes",
   },
   v4: {
     bg: "radial-gradient(ellipse at 50% 40%, #dcfce7 0%, #f0fdf4 60%, #fff 100%)",
@@ -79,7 +79,7 @@ const THEMES = {
     textPrimary: "#111",
     textSecondary: "#555",
     isLight: true,
-    winTitle: "WINNER! ✓",
+    winTitle: "YOU WON!",
     winColor: "#059669",
     subtitle: "Free entry — no purchase necessary",
   },
@@ -92,7 +92,7 @@ const THEMES = {
     textPrimary: "#fff",
     textSecondary: "#999",
     isLight: false,
-    winTitle: "MEGA WIN! 💥",
+    winTitle: "YOU WON!",
     winColor: "#FF0000",
     subtitle: "The biggest prize of the year",
   },
@@ -183,6 +183,7 @@ export default function SpinClient({ offer, locale, variant }: { offer: Offer; l
   const [viewersNow, setViewersNow] = useState(0)
 
   const theme = THEMES[variant as keyof typeof THEMES] ?? THEMES.v1
+  const compliantMode = process.env.NEXT_PUBLIC_COMPLIANT_MODE === "true"
 
   useEffect(() => {
     initPostHog()
@@ -229,85 +230,56 @@ export default function SpinClient({ offer, locale, variant }: { offer: Offer; l
   }
 
   async function postToAffiliate(emailVal: string, leadId: string, first: string, last: string) {
-  if (!offer.affiliatePostUrl || process.env.NEXT_PUBLIC_TEST_MODE === "true") return
-  try {
-    const url = new URL(offer.affiliatePostUrl)
-    url.searchParams.set("email", emailVal)
-    if (first) url.searchParams.set("firstName", first)
-    if (last) url.searchParams.set("lastName", last)
-    if (offer.subParam) url.searchParams.set(offer.subParam, leadId)
-    fetch(url.toString(), { mode: "no-cors" }).catch(() => {})
-  } catch {}
-}
+    if (!offer.affiliatePostUrl || process.env.NEXT_PUBLIC_TEST_MODE === "true") return
+    try {
+      const url = new URL(offer.affiliatePostUrl)
+      url.searchParams.set("email", emailVal)
+      if (first) url.searchParams.set("firstName", first)
+      if (last) url.searchParams.set("lastName", last)
+      if (offer.subParam) url.searchParams.set(offer.subParam, leadId)
+      fetch(url.toString(), { mode: "no-cors" }).catch(() => {})
+    } catch {}
+  }
 
-async function saveLeadAPI(data: Record<string, any>) {
-  const res = await fetch("/api/leads", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  })
-  return res.json()
-}
+  async function saveLeadAPI(data: Record<string, any>) {
+    const res = await fetch("/api/leads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    })
+    return res.json()
+  }
 
   async function handleEmailSubmit(e: React.FormEvent) {
-  e.preventDefault()
-  if (!email || !firstName || !lastName) return
-  setLoading(true)
-  playSound("click")
-  const utms = getUTMParams()
-  const result = await saveLeadAPI({
-    offerId: offer.id,
-    email,
-    firstName,
-    lastName,
-    locale,
-    variant,
-    sessionId,
-    visitorId,
-    ...utms,
-  })
-  if (result.success && result.leadId) {
-    capture("email_submitted", { offerId: offer.id, variant, locale })
-    await postToAffiliate(email, result.leadId, firstName, lastName)
+    e.preventDefault()
+    if (!email || !firstName || !lastName) return
+    setLoading(true)
+    playSound("click")
+    const utms = getUTMParams()
+    const result = await saveLeadAPI({ offerId: offer.id, email, firstName, lastName, locale, variant, sessionId, visitorId, ...utms })
+    if (result.success && result.leadId) {
+      capture("email_submitted", { offerId: offer.id, variant, locale })
+      await postToAffiliate(email, result.leadId, firstName, lastName)
+    }
+    setLoading(false)
+    setStep("phone")
   }
-  setLoading(false)
-  setStep("phone")
-}
 
-  async function handleExitIntentSubmit(emailVal: string, firstName: string, lastName: string) {
-  const result = await saveLeadAPI({
-    offerId: offer.id,
-    email: emailVal,
-    firstName,
-    lastName,
-    locale,
-    variant: `${variant}_exit`,
-    sessionId,
-    visitorId,
-  })
-  if (result.success && result.leadId) await postToAffiliate(emailVal, result.leadId, firstName, lastName)
-}
+  async function handleExitIntentSubmit(emailVal: string, first: string, last: string) {
+    const result = await saveLeadAPI({ offerId: offer.id, email: emailVal, firstName: first, lastName: last, locale, variant: `${variant}_exit`, sessionId, visitorId })
+    if (result.success && result.leadId) await postToAffiliate(emailVal, result.leadId, first, last)
+  }
 
   async function handlePhoneSubmit(e: React.FormEvent) {
-  e.preventDefault()
-  if (!phone) return
-  setLoading(true)
-  playSound("click")
-  await saveLeadAPI({
-    offerId: offer.id,
-    email,
-    phone,
-    firstName,
-    lastName,
-    locale,
-    variant,
-    sessionId,
-    visitorId,
-  })
-  capture("phone_upsell_submitted", { offerId: offer.id, variant, locale })
-  setLoading(false)
-  setStep("done")
-}
+    e.preventDefault()
+    if (!phone) return
+    setLoading(true)
+    playSound("click")
+    await saveLeadAPI({ offerId: offer.id, email, phone, firstName, lastName, locale, variant, sessionId, visitorId })
+    capture("phone_upsell_submitted", { offerId: offer.id, variant, locale })
+    setLoading(false)
+    setStep("done")
+  }
 
   const cssVars = {
     "--accent": theme.accent,
@@ -318,7 +290,7 @@ async function saveLeadAPI(data: Record<string, any>) {
   return (
     <>
       <ScrollTracker offerId={offer.id} variant={variant} locale={locale} sessionId={sessionId} visitorId={visitorId} />
-      <RecentWinnersPopup accentColor={theme.accent} />
+      {!compliantMode && <RecentWinnersPopup accentColor={theme.accent} />}
       {offer.exitIntentEnabled && step === "spin" && (
         <ExitIntent offerId={offer.id} variant={variant} maxShows={offer.exitIntentMaxShows} cooldownHours={offer.exitIntentCooldownHours} skipReturners={offer.exitIntentSkipReturners} onSubmit={handleExitIntentSubmit} accentColor={theme.accent} isLight={theme.isLight} />
       )}
@@ -333,25 +305,31 @@ async function saveLeadAPI(data: Record<string, any>) {
 
           <ProgressBar step={step} accentColor={theme.accent} />
 
-          <div className="ticker-wrap">
-            <WinnerTicker accentColor={theme.accent} />
-          </div>
+          {!compliantMode && (
+            <div className="ticker-wrap">
+              <WinnerTicker accentColor={theme.accent} />
+            </div>
+          )}
 
           <CountdownTimer accentColor={theme.accent} textColor={theme.textSecondary} />
 
-          <motion.div
-            className="urgency-bar"
-            animate={{ opacity: spotsLeft <= 10 ? [1, 0.65, 1] : 1 }}
-            transition={{ repeat: spotsLeft <= 10 ? Infinity : 0, duration: 1.2 }}
-            style={{
-              background: spotsLeft <= 10
-                ? "linear-gradient(90deg, #CC0000, #FF2222)"
-                : `linear-gradient(90deg, ${theme.accentDim}, ${theme.accent})`,
-              color: "#000",
-            }}
-          >
-            ⚡ ONLY {spotsLeft || "?"} SPOTS REMAINING · {viewersNow} VIEWING NOW
-          </motion.div>
+          {compliantMode ? (
+            <div className="urgency-bar" style={{ background: `linear-gradient(90deg, ${theme.accentDim}, ${theme.accent})`, color: "#000" }}>
+              🏆 OFFICIAL SWEEPSTAKES — FREE ENTRY — NO PURCHASE NECESSARY
+            </div>
+          ) : (
+            <motion.div
+              className="urgency-bar"
+              animate={{ opacity: spotsLeft <= 10 ? [1, 0.65, 1] : 1 }}
+              transition={{ repeat: spotsLeft <= 10 ? Infinity : 0, duration: 1.2 }}
+              style={{
+                background: spotsLeft <= 10 ? "linear-gradient(90deg, #CC0000, #FF2222)" : `linear-gradient(90deg, ${theme.accentDim}, ${theme.accent})`,
+                color: "#000",
+              }}
+            >
+              ⚡ ONLY {spotsLeft || "?"} SPOTS REMAINING · {viewersNow} VIEWING NOW
+            </motion.div>
+          )}
 
           <div className="spin-logo" style={{ color: theme.accent, textShadow: `0 0 40px ${theme.accentGlow}` }}>
             SweepVaults
@@ -360,14 +338,25 @@ async function saveLeadAPI(data: Record<string, any>) {
             {theme.subtitle}
           </div>
 
-          <div className="social-bar">
-            <div className="social-item" style={{ color: theme.textSecondary }}>
-              🔴 <span style={{ color: theme.accent, fontWeight: 600 }}>{viewersNow}</span> viewing
+          {compliantMode ? (
+            <div className="social-bar">
+              <div className="social-item" style={{ color: theme.textSecondary }}>
+                🔒 <span style={{ color: theme.accent, fontWeight: 600 }}>SSL Secured</span>
+              </div>
+              <div className="social-item" style={{ color: theme.textSecondary }}>
+                ✅ <span style={{ color: theme.accent, fontWeight: 600 }}>Official Sweepstakes</span>
+              </div>
             </div>
-            <div className="social-item" style={{ color: theme.textSecondary }}>
-              🏆 <span style={{ color: theme.accent, fontWeight: 600 }}>{enteredToday.toLocaleString()}</span> entered today
+          ) : (
+            <div className="social-bar">
+              <div className="social-item" style={{ color: theme.textSecondary }}>
+                🔴 <span style={{ color: theme.accent, fontWeight: 600 }}>{viewersNow}</span> viewing
+              </div>
+              <div className="social-item" style={{ color: theme.textSecondary }}>
+                🏆 <span style={{ color: theme.accent, fontWeight: 600 }}>{enteredToday.toLocaleString()}</span> entered today
+              </div>
             </div>
-          </div>
+          )}
 
           <AnimatePresence mode="wait">
 
@@ -389,6 +378,7 @@ async function saveLeadAPI(data: Record<string, any>) {
                 <div className="legal-row">
                   <a href="/legal/privacy" style={{ color: theme.textSecondary }}>Privacy Policy</a>
                   <a href="/legal/terms" style={{ color: theme.textSecondary }}>Terms</a>
+                  <a href="/legal/rules" style={{ color: theme.textSecondary }}>Official Rules</a>
                 </div>
               </motion.div>
             )}
@@ -399,7 +389,7 @@ async function saveLeadAPI(data: Record<string, any>) {
                 <div className="win-title" style={{ color: theme.winColor, textShadow: `0 0 40px ${theme.accentGlow}` }}>
                   {theme.winTitle}
                 </div>
-                <div className="win-sub" style={{ color: theme.textPrimary }}>Claim your prize now</div>
+                <div className="win-sub" style={{ color: theme.textPrimary }}>Claim your entry now</div>
               </motion.div>
             )}
 
@@ -407,55 +397,21 @@ async function saveLeadAPI(data: Record<string, any>) {
               <motion.div key="email" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className={theme.isLight ? "glass-card-light" : "glass-card"}>
                 <div style={{ textAlign: "center", marginBottom: "22px" }}>
                   <div style={{ fontSize: "52px", marginBottom: "10px" }}>🎁</div>
-                  <div className="spin-title" style={{ color: theme.textPrimary, fontSize: "22px", marginBottom: "6px" }}>Claim Your Prize!</div>
-                  <div style={{ fontSize: "14px", color: theme.textSecondary }}>Enter your email to receive your winnings</div>
+                  <div className="spin-title" style={{ color: theme.textPrimary, fontSize: "22px", marginBottom: "6px" }}>Complete Your Entry!</div>
+                  <div style={{ fontSize: "14px", color: theme.textSecondary }}>Enter your details to submit your sweepstakes entry</div>
                 </div>
                 <form onSubmit={handleEmailSubmit}>
-  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "0" }}>
-    <input
-      type="text"
-      value={firstName}
-      onChange={(e) => setFirstName(e.target.value)}
-      placeholder="First name"
-      required
-      className={theme.isLight ? "spin-input-light" : "spin-input"}
-      style={{ color: theme.textPrimary }}
-    />
-    <input
-      type="text"
-      value={lastName}
-      onChange={(e) => setLastName(e.target.value)}
-      placeholder="Last name"
-      required
-      className={theme.isLight ? "spin-input-light" : "spin-input"}
-      style={{ color: theme.textPrimary }}
-    />
-  </div>
-  <input
-    type="email"
-    value={email}
-    onChange={(e) => setEmail(e.target.value)}
-    placeholder="your@email.com"
-    required
-    className={theme.isLight ? "spin-input-light" : "spin-input"}
-    style={{ color: theme.textPrimary }}
-  />
-  <motion.button
-    type="submit"
-    disabled={loading}
-    whileTap={{ scale: 0.97 }}
-    className="spin-cta"
-    style={{
-      background: loading ? "#333" : `linear-gradient(135deg, ${theme.accentDim}, ${theme.accent})`,
-      color: loading ? "#666" : "#000",
-      boxShadow: loading ? "none" : `0 8px 28px ${theme.accentGlow}`,
-    }}
-  >
-    {loading ? "Processing..." : "CLAIM MY PRIZE →"}
-  </motion.button>
-</form>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                    <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" required className={theme.isLight ? "spin-input-light" : "spin-input"} style={{ color: theme.textPrimary }} />
+                    <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" required className={theme.isLight ? "spin-input-light" : "spin-input"} style={{ color: theme.textPrimary }} />
+                  </div>
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" required className={theme.isLight ? "spin-input-light" : "spin-input"} style={{ color: theme.textPrimary }} />
+                  <motion.button type="submit" disabled={loading} whileTap={{ scale: 0.97 }} className="spin-cta" style={{ background: loading ? "#333" : `linear-gradient(135deg, ${theme.accentDim}, ${theme.accent})`, color: loading ? "#666" : "#000", boxShadow: loading ? "none" : `0 8px 28px ${theme.accentGlow}` }}>
+                    {loading ? "Processing..." : "SUBMIT MY ENTRY →"}
+                  </motion.button>
+                </form>
                 <div style={{ fontSize: "11px", color: theme.textSecondary, textAlign: "center", marginTop: "12px", opacity: 0.5 }}>
-                  By entering you agree to our <a href="/legal/terms" style={{ color: theme.textSecondary }}>terms</a>. No spam ever.
+                  By entering you agree to our <a href="/legal/terms" style={{ color: theme.textSecondary }}>terms</a> and <a href="/legal/rules" style={{ color: theme.textSecondary }}>official rules</a>. No purchase necessary.
                 </div>
               </motion.div>
             )}
