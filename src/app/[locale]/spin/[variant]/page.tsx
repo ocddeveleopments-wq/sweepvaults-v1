@@ -2,15 +2,22 @@ import SpinClient from "./SpinClient"
 import "../spin.css"
 import { get } from "@vercel/edge-config"
 
-export const revalidate = 60
+export const dynamic = "force-static"
+export const revalidate = 3600
 
-function SpinSkeleton() {
-  return (
-    <div style={{ minHeight: "100vh", background: "#080600", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "24px" }}>
-      <div style={{ width: "280px", height: "280px", borderRadius: "50%", background: "#1a1200", border: "4px solid #2a2000" }} />
-      <div style={{ width: "200px", height: "56px", borderRadius: "50px", background: "#1a1200" }} />
-    </div>
-  )
+export function generateStaticParams() {
+  return [
+    { locale: "en", variant: "v1" },
+    { locale: "en", variant: "v2" },
+    { locale: "en", variant: "v3" },
+    { locale: "en", variant: "v4" },
+    { locale: "en", variant: "v5" },
+    { locale: "fr", variant: "v1" },
+    { locale: "fr", variant: "v2" },
+    { locale: "fr", variant: "v3" },
+    { locale: "fr", variant: "v4" },
+    { locale: "fr", variant: "v5" },
+  ]
 }
 
 export default async function SpinPage({
@@ -21,7 +28,6 @@ export default async function SpinPage({
   const { locale, variant } = await params
 
   let offer: any = null
-
   try {
     offer = await get("active_offer")
   } catch {}
