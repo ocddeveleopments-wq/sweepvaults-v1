@@ -281,11 +281,18 @@ export default function Wheel({ onWin, variant = "v1", spinning, hasSpun, onSpin
         }} />
 
         <canvas
-          ref={canvasRef}
-          width={300}
-          height={300}
-          style={{ borderRadius: "50%", display: "block", position: "relative", zIndex: 1 }}
-        />
+  ref={canvasRef}
+  width={300}
+  height={300}
+  style={{
+    borderRadius: "50%",
+    display: "block",
+    position: "relative",
+    zIndex: 1,
+    width: "min(300px, 75vw)",
+    height: "min(300px, 75vw)",
+  }}
+/>
       </div>
 
       {/* Spin button */}

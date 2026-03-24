@@ -363,7 +363,26 @@
 }
 
 /* Mobile */
-@media (max-width: 480px) {
-  .spin-page { padding: 12px; }
-  .glass-card, .glass-card-light { padding: 22px 18px; }
+
+
+
+@media (max-height: 700px), (max-width: 390px) {
+  .spin-page { padding: 8px 12px; }
+  .spin-logo { font-size: 22px; margin-bottom: 2px; }
+  .spin-tagline { font-size: 11px; margin-bottom: 8px; }
+  .social-bar { padding: 6px 12px; margin-bottom: 10px; }
+  .urgency-bar { padding: 6px 12px; font-size: 11px; margin-bottom: 8px; }
+  .countdown-wrap { margin-bottom: 6px; }
+  .ticker-wrap { margin-bottom: 6px; }
+  .progress-wrap { margin-bottom: 8px; }
+  .spin-title { font-size: 18px !important; margin-bottom: 12px; }
+  .trust-row { margin-top: 8px; }
+  .legal-row { margin-top: 6px; }
+  .badge-row { margin-top: 8px; }
+}
+
+@media (max-height: 600px) {
+  .ticker-wrap { display: none; }
+  .countdown-wrap { display: none; }
+  .social-bar { display: none; }
 }
