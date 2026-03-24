@@ -1,10 +1,8 @@
 import SpinClient from "./SpinClient"
 import "../spin.css"
-import { Suspense } from "react"
 import { get } from "@vercel/edge-config"
-import { prisma } from "@/lib/prisma"
 
-export const revalidate = 30
+export const revalidate = 60
 
 function SpinSkeleton() {
   return (
@@ -15,48 +13,18 @@ function SpinSkeleton() {
   )
 }
 
-async function SpinPageContent({ locale, variant }: { locale: string; variant: string }) {
+export default async function SpinPage({
+  params,
+}: {
+  params: Promise<{ locale: string; variant: string }>
+}) {
+  const { locale, variant } = await params
+
   let offer: any = null
 
   try {
-    // Try Edge Config first — instant, no DB hit
-    const cachedOffer = await get("active_offer")
-    if (cachedOffer) {
-      // Just check daily cap against DB
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const todayLeads = await prisma.lead.count({
-        where: { offerId: (cachedOffer as any).id, createdAt: { gte: today } },
-      })
-      const cap = (cachedOffer as any).dailyCap ?? 15
-      if (todayLeads < cap) {
-        offer = { ...(cachedOffer as Record<string, any>), todayLeads, remainingToday: cap - todayLeads }
-
-      }
-    }
+    offer = await get("active_offer")
   } catch {}
-
-  // Fallback to DB if Edge Config fails
-  if (!offer) {
-    try {
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const offers = await prisma.offer.findMany({
-        where: { active: true, languages: { has: locale } },
-        orderBy: { rotationOrder: "asc" },
-      })
-      for (const o of offers) {
-        const todayLeads = await prisma.lead.count({
-          where: { offerId: o.id, createdAt: { gte: today } },
-        })
-        if (todayLeads < o.dailyCap) {
-          offer = { ...o, todayLeads, remainingToday: o.dailyCap - todayLeads }
-          break
-        }
-      }
-      if (!offer && offers[0]) offer = { ...offers[0], todayLeads: 0, remainingToday: 0 }
-    } catch {}
-  }
 
   if (!offer) {
     return (
@@ -71,17 +39,4 @@ async function SpinPageContent({ locale, variant }: { locale: string; variant: s
   }
 
   return <SpinClient offer={offer} locale={locale} variant={variant} />
-}
-
-export default async function SpinPage({
-  params,
-}: {
-  params: Promise<{ locale: string; variant: string }>
-}) {
-  const { locale, variant } = await params
-  return (
-    <Suspense fallback={<SpinSkeleton />}>
-      <SpinPageContent locale={locale} variant={variant} />
-    </Suspense>
-  )
 }
