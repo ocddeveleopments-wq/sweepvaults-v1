@@ -1,9 +1,10 @@
 import SpinClient from "./SpinClient"
 import "../spin.css"
 import { Suspense } from "react"
+import { get } from "@vercel/edge-config"
 import { prisma } from "@/lib/prisma"
 
-export const revalidate = 60 // cache for 60 seconds
+export const revalidate = 30
 
 function SpinSkeleton() {
   return (
@@ -15,26 +16,46 @@ function SpinSkeleton() {
 }
 
 async function SpinPageContent({ locale, variant }: { locale: string; variant: string }) {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  let offer: any = null
 
-  const offers = await prisma.offer.findMany({
-    where: { active: true, languages: { has: locale } },
-    orderBy: { rotationOrder: "asc" },
-  })
-
-  let offer = null
-  for (const o of offers) {
-    const todayLeads = await prisma.lead.count({
-      where: { offerId: o.id, createdAt: { gte: today } },
-    })
-    if (todayLeads < o.dailyCap) {
-      offer = { ...o, todayLeads, remainingToday: o.dailyCap - todayLeads }
-      break
+  try {
+    // Try Edge Config first — instant, no DB hit
+    const cachedOffer = await get("active_offer")
+    if (cachedOffer) {
+      // Just check daily cap against DB
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const todayLeads = await prisma.lead.count({
+        where: { offerId: (cachedOffer as any).id, createdAt: { gte: today } },
+      })
+      const cap = (cachedOffer as any).dailyCap ?? 15
+      if (todayLeads < cap) {
+        offer = { ...cachedOffer, todayLeads, remainingToday: cap - todayLeads }
+      }
     }
-  }
+  } catch {}
 
-  if (!offer) offer = offers[0] ? { ...offers[0], todayLeads: 0, remainingToday: 0 } : null
+  // Fallback to DB if Edge Config fails
+  if (!offer) {
+    try {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const offers = await prisma.offer.findMany({
+        where: { active: true, languages: { has: locale } },
+        orderBy: { rotationOrder: "asc" },
+      })
+      for (const o of offers) {
+        const todayLeads = await prisma.lead.count({
+          where: { offerId: o.id, createdAt: { gte: today } },
+        })
+        if (todayLeads < o.dailyCap) {
+          offer = { ...o, todayLeads, remainingToday: o.dailyCap - todayLeads }
+          break
+        }
+      }
+      if (!offer && offers[0]) offer = { ...offers[0], todayLeads: 0, remainingToday: 0 }
+    } catch {}
+  }
 
   if (!offer) {
     return (
