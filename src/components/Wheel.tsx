@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 
 const VARIANT_CONFIGS = {
   v1: {
@@ -98,8 +98,26 @@ interface WheelProps {
 export default function Wheel({ onWin, variant = "v1", spinning, hasSpun, onSpin }: WheelProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rotationRef = useRef(0)
+  const [shake, setShake] = useState(false)
   const config = VARIANT_CONFIGS[variant as keyof typeof VARIANT_CONFIGS] ?? VARIANT_CONFIGS.v1
   const segmentAngle = (2 * Math.PI) / config.segments.length
+
+  // Shake after 3 seconds if not clicked
+  useEffect(() => {
+    if (hasSpun || spinning) return
+    const timer = setTimeout(() => {
+      setShake(true)
+      setTimeout(() => setShake(false), 600)
+    }, 3000)
+    // Repeat every 6 seconds
+    const interval = setInterval(() => {
+      if (!hasSpun && !spinning) {
+        setShake(true)
+        setTimeout(() => setShake(false), 600)
+      }
+    }, 6000)
+    return () => { clearTimeout(timer); clearInterval(interval) }
+  }, [hasSpun, spinning])
 
   function drawWheel(rotation: number) {
     const canvas = canvasRef.current
@@ -250,75 +268,118 @@ export default function Wheel({ onWin, variant = "v1", spinning, hasSpun, onSpin
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px" }}>
-      <div style={{ position: "relative" }}>
-        <div style={{
-          position: "absolute",
-          top: "50%",
-          right: "-4px",
-          transform: "translateY(-50%)",
-          zIndex: 10,
-          filter: `drop-shadow(0 0 6px ${config.outerRing})`,
-        }}>
-          <svg width="32" height="32" viewBox="0 0 32 32">
-            <polygon points="32,16 8,6 12,16 8,26" fill={config.outerRing} />
-            <polygon points="32,16 8,6 12,16 8,26" fill="none" stroke="#fff" strokeWidth="1" />
-          </svg>
-        </div>
+    <>
+      <style>{`
+        @keyframes pulseGlow {
+          0%, 100% { box-shadow: 0 0 20px 4px var(--btn-glow), 0 4px 16px rgba(0,0,0,0.4); transform: scale(1); }
+          50% { box-shadow: 0 0 40px 12px var(--btn-glow), 0 4px 16px rgba(0,0,0,0.4); transform: scale(1.03); }
+        }
+        @keyframes shakeBtn {
+          0%, 100% { transform: translateX(0) scale(1); }
+          15% { transform: translateX(-8px) scale(1.02); }
+          30% { transform: translateX(8px) scale(1.02); }
+          45% { transform: translateX(-6px) scale(1.02); }
+          60% { transform: translateX(6px) scale(1.02); }
+          75% { transform: translateX(-4px); }
+          90% { transform: translateX(4px); }
+        }
+        @keyframes tapHint {
+          0%, 100% { opacity: 0.7; transform: translateY(0); }
+          50% { opacity: 1; transform: translateY(-4px); }
+        }
+      `}</style>
 
-        <div style={{
-          position: "absolute",
-          inset: "-20px",
-          borderRadius: "50%",
-          background: `radial-gradient(circle, ${config.shadowColor} 0%, transparent 70%)`,
-          pointerEvents: "none",
-        }} />
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
 
-        <canvas
-          ref={canvasRef}
-          width={300}
-          height={300}
+        {/* TAP TO SPIN hint — only show if not spun */}
+        {!hasSpun && !spinning && (
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            fontSize: "15px",
+            fontWeight: 700,
+            color: config.outerRing,
+            letterSpacing: "0.1em",
+            animation: "tapHint 1.5s ease-in-out infinite",
+            fontFamily: "var(--font-oswald), sans-serif",
+          }}>
+            👇 TAP TO SPIN & WIN
+          </div>
+        )}
+
+        {/* Spin button — ABOVE the wheel */}
+        <button
+          onClick={handleSpin}
+          disabled={spinning || hasSpun}
           style={{
-            borderRadius: "50%",
-            display: "block",
-            position: "relative",
-            zIndex: 1,
-            width: "min(300px, 75vw)",
-            height: "min(300px, 75vw)",
+            padding: "20px 56px",
+            borderRadius: "50px",
+            fontWeight: 900,
+            fontSize: "22px",
+            border: "none",
+            cursor: spinning || hasSpun ? "not-allowed" : "pointer",
+            letterSpacing: "0.08em",
+            fontFamily: "var(--font-oswald), sans-serif",
+            background: spinning || hasSpun
+              ? "#333"
+              : `linear-gradient(135deg, ${config.outerRing}, ${config.innerRing})`,
+            color: spinning || hasSpun ? "#666" : "#000",
+            textShadow: spinning || hasSpun ? "none" : "0 1px 3px rgba(0,0,0,0.3)",
+            textTransform: "uppercase" as const,
+            ["--btn-glow" as any]: config.shadowColor,
+            animation: hasSpun || spinning
+              ? "none"
+              : shake
+              ? "shakeBtn 0.6s ease"
+              : "pulseGlow 2s ease-in-out infinite",
+            transition: "background 0.2s",
+            width: "100%",
+            maxWidth: "320px",
           }}
-        />
-      </div>
+        >
+          {spinning ? "SPINNING... 🎰" : hasSpun ? "✓ ENTERED!" : "🎰 SPIN TO WIN FREE"}
+        </button>
 
-      <button
-        onClick={handleSpin}
-        disabled={spinning || hasSpun}
-        style={{
-          padding: "16px 48px",
-          borderRadius: "50px",
-          fontWeight: 900,
-          fontSize: "18px",
-          border: "none",
-          cursor: spinning || hasSpun ? "not-allowed" : "pointer",
-          letterSpacing: "0.08em",
-          fontFamily: "var(--font-oswald), sans-serif",
-          background: spinning || hasSpun
-            ? "#333"
-            : `linear-gradient(135deg, ${config.outerRing}, ${config.innerRing})`,
-          color: spinning || hasSpun ? "#666" : "#fff",
-          boxShadow: spinning || hasSpun
-            ? "none"
-            : `0 8px 32px ${config.shadowColor}, 0 2px 8px rgba(0,0,0,0.4)`,
-          transition: "transform 0.1s, opacity 0.2s",
-          textShadow: "0 1px 3px rgba(0,0,0,0.5)",
-          textTransform: "uppercase" as const,
-        }}
-        onMouseDown={(e) => { if (!spinning && !hasSpun) (e.currentTarget as HTMLElement).style.transform = "scale(0.95)" }}
-        onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1)" }}
-        onTouchStart={(e) => { if (!spinning && !hasSpun) (e.currentTarget as HTMLElement).style.transform = "scale(0.95)" }}
-        onTouchEnd={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1)" }}
-      >
-        {spinning ? "SPINNING..." : hasSpun ? "ENTERED! ✓" : "🎰 SPIN TO WIN FREE"}
-      </button>
-    </div>
+        {/* Wheel */}
+        <div style={{ position: "relative" }}>
+          <div style={{
+            position: "absolute",
+            top: "50%",
+            right: "-4px",
+            transform: "translateY(-50%)",
+            zIndex: 10,
+            filter: `drop-shadow(0 0 6px ${config.outerRing})`,
+          }}>
+            <svg width="32" height="32" viewBox="0 0 32 32">
+              <polygon points="32,16 8,6 12,16 8,26" fill={config.outerRing} />
+              <polygon points="32,16 8,6 12,16 8,26" fill="none" stroke="#fff" strokeWidth="1" />
+            </svg>
+          </div>
+
+          <div style={{
+            position: "absolute",
+            inset: "-20px",
+            borderRadius: "50%",
+            background: `radial-gradient(circle, ${config.shadowColor} 0%, transparent 70%)`,
+            pointerEvents: "none",
+          }} />
+
+          <canvas
+            ref={canvasRef}
+            width={300}
+            height={300}
+            style={{
+              borderRadius: "50%",
+              display: "block",
+              position: "relative",
+              zIndex: 1,
+              width: "min(300px, 75vw)",
+              height: "min(300px, 75vw)",
+            }}
+          />
+        </div>
+      </div>
+    </>
   )
 }
