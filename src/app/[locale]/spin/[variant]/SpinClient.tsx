@@ -226,17 +226,21 @@ export default function SpinClient({ offer, locale, variant }: { offer: Offer; l
     setTimeout(() => setStep("email"), 2800)
   }
 
-  async function postToAffiliate(emailVal: string, leadId: string, first: string, last: string) {
-    if (!offer.affiliatePostUrl || process.env.NEXT_PUBLIC_TEST_MODE === "true") return
-    try {
-      const url = new URL(offer.affiliatePostUrl)
-      url.searchParams.set("email", emailVal)
-      if (first) url.searchParams.set("firstName", first)
-      if (last) url.searchParams.set("lastName", last)
-      if (offer.subParam) url.searchParams.set(offer.subParam, leadId)
-      fetch(url.toString(), { mode: "no-cors" }).catch(() => {})
-    } catch {}
-  }
+  function buildAffiliateUrl(first: string, last: string, emailVal: string, leadId: string) {
+  const prepop = `firstName=${encodeURIComponent(first)}&lastName=${encodeURIComponent(last)}&email=${encodeURIComponent(emailVal)}`
+  const x = encodeURIComponent(prepop)
+  const base = offer.affiliatePostUrl
+  const subId = leadId
+  return `${base}&x=${x}&s2=${subId}`
+}
+
+async function postToAffiliate(emailVal: string, leadId: string, first: string, last: string) {
+  if (!offer.affiliatePostUrl || process.env.NEXT_PUBLIC_TEST_MODE === "true") return
+  try {
+    const affiliateUrl = buildAffiliateUrl(first, last, emailVal, leadId)
+    window.open(affiliateUrl, "_blank")
+  } catch {}
+}
 
   async function saveLeadAPI(data: Record<string, any>) {
     const res = await fetch("/api/leads", {
