@@ -1,30 +1,45 @@
-import { NextIntlClientProvider } from "next-intl"
-import { getMessages } from "next-intl/server"
-import { notFound } from "next/navigation"
+import type { Metadata } from "next"
+import { ClerkProvider } from "@clerk/nextjs"
+import Script from "next/script"
+import "./globals.css"
 
-const locales = ["en", "fr"]
+export const metadata: Metadata = {
+  title: "SweepVaults — Win $25,000 Cash",
+  description: "Spin the wheel for your chance to win $25,000 cash. Free entry, no purchase necessary.",
+}
 
-export default async function LocaleLayout({
+export default function RootLayout({
   children,
-  params,
 }: {
   children: React.ReactNode
-  params: Promise<{ locale: string }>
 }) {
-  const { locale } = await params
-
-  if (!locales.includes(locale)) {
-    notFound()
-  }
-
-  const messages = await getMessages()
+  const gaId = process.env.NEXT_PUBLIC_GA_ID
 
   return (
-    <NextIntlClientProvider locale={locale} messages={messages}>
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
-      {children}
-    </NextIntlClientProvider>
+    <ClerkProvider>
+      <html lang="en">
+        <body>
+          {gaId && (
+            <>
+              <Script
+                src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+                strategy="afterInteractive"
+              />
+              <Script id="google-analytics" strategy="afterInteractive">
+                {`
+                  window.dataLayer = window.dataLayer || [];
+                  function gtag(){dataLayer.push(arguments);}
+                  gtag('js', new Date());
+                  gtag('config', '${gaId}', {
+                    page_path: window.location.pathname,
+                  });
+                `}
+              </Script>
+            </>
+          )}
+          {children}
+        </body>
+      </html>
+    </ClerkProvider>
   )
 }
