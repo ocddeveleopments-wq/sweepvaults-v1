@@ -1,20 +1,40 @@
-import { getActiveOffer } from "@/app/actions"
 import SpinClient from "./SpinClient"
 import "../spin.css"
 import { Suspense } from "react"
+import { prisma } from "@/lib/prisma"
+
+export const revalidate = 60 // cache for 60 seconds
 
 function SpinSkeleton() {
   return (
     <div style={{ minHeight: "100vh", background: "#080600", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "24px" }}>
-      <div style={{ width: "300px", height: "300px", borderRadius: "50%", background: "#1a1200", border: "4px solid #2a2000", animation: "pulse 1.5s ease-in-out infinite" }} />
-      <div style={{ width: "200px", height: "56px", borderRadius: "50px", background: "#1a1200", animation: "pulse 1.5s ease-in-out infinite 0.2s" }} />
-      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
+      <div style={{ width: "280px", height: "280px", borderRadius: "50%", background: "#1a1200", border: "4px solid #2a2000" }} />
+      <div style={{ width: "200px", height: "56px", borderRadius: "50px", background: "#1a1200" }} />
     </div>
   )
 }
 
 async function SpinPageContent({ locale, variant }: { locale: string; variant: string }) {
-  const offer = await getActiveOffer(locale)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const offers = await prisma.offer.findMany({
+    where: { active: true, languages: { has: locale } },
+    orderBy: { rotationOrder: "asc" },
+  })
+
+  let offer = null
+  for (const o of offers) {
+    const todayLeads = await prisma.lead.count({
+      where: { offerId: o.id, createdAt: { gte: today } },
+    })
+    if (todayLeads < o.dailyCap) {
+      offer = { ...o, todayLeads, remainingToday: o.dailyCap - todayLeads }
+      break
+    }
+  }
+
+  if (!offer) offer = offers[0] ? { ...offers[0], todayLeads: 0, remainingToday: 0 } : null
 
   if (!offer) {
     return (
@@ -37,7 +57,6 @@ export default async function SpinPage({
   params: Promise<{ locale: string; variant: string }>
 }) {
   const { locale, variant } = await params
-
   return (
     <Suspense fallback={<SpinSkeleton />}>
       <SpinPageContent locale={locale} variant={variant} />
