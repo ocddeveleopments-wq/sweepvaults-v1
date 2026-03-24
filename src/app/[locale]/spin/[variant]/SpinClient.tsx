@@ -216,15 +216,16 @@ export default function SpinClient({ offer, locale, variant }: { offer: Offer; l
     capture("spin_clicked", { offerId: offer.id, variant })
   }
 
-  async function handleWin() {
-    setSpinning(false)
-    setHasSpun(true)
-    fireWinAnimation(variant)
-    playSound("win")
-    capture("win_reveal_shown", { offerId: offer.id, variant })
-    setStep("win")
-    setTimeout(() => setStep("email"), 2800)
-  }
+async function handleWin() {
+  setSpinning(false)
+  setHasSpun(true)
+  fireWinAnimation(variant)
+  playSound("win")
+  capture("win_reveal_shown", { offerId: offer.id, variant })
+  capture("modal_shown", { result: "$25,000", offerId: offer.id, variant })
+  setStep("win")
+  setTimeout(() => setStep("email"), 2800)
+}
 
   function buildAffiliateUrl(first: string, last: string, emailVal: string, leadId: string) {
   const prepop = `firstName=${encodeURIComponent(first)}&lastName=${encodeURIComponent(last)}&email=${encodeURIComponent(emailVal)}`
@@ -418,11 +419,29 @@ async function postToAffiliate(emailVal: string, leadId: string, first: string, 
               </div>
               <form onSubmit={handleEmailSubmit}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                  <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" required className={theme.isLight ? "spin-input-light" : "spin-input"} style={{ color: theme.textPrimary }} />
-                  <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" required className={theme.isLight ? "spin-input-light" : "spin-input"} style={{ color: theme.textPrimary }} />
+<input
+  type="text"
+  value={firstName}
+  onChange={(e) => setFirstName(e.target.value)}
+  onFocus={() => capture("form_started", { offerId: offer.id, variant })}
+  placeholder="First name"
+  required
+  className={theme.isLight ? "spin-input-light" : "spin-input"}
+  style={{ color: theme.textPrimary }}
+/>                  <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" required className={theme.isLight ? "spin-input-light" : "spin-input"} style={{ color: theme.textPrimary }} />
                 </div>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" required className={theme.isLight ? "spin-input-light" : "spin-input"} style={{ color: theme.textPrimary }} />
-                <button
+<input
+  type="email"
+  value={email}
+  onChange={(e) => {
+    setEmail(e.target.value)
+    if (e.target.value.length === 1) capture("form_started", { offerId: offer.id, variant })
+  }}
+  placeholder="your@email.com"
+  required
+  className={theme.isLight ? "spin-input-light" : "spin-input"}
+  style={{ color: theme.textPrimary }}
+/>                <button
                   type="submit"
                   disabled={loading}
                   style={{
