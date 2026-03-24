@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
 import confetti from "canvas-confetti"
 import Wheel from "@/components/Wheel"
 import ExitIntent from "@/components/ExitIntent"
@@ -11,7 +10,7 @@ import CountdownTimer from "@/components/CountdownTimer"
 import RecentWinnersPopup from "@/components/RecentWinnersPopup"
 import SecurityBadges from "@/components/SecurityBadges"
 import ProgressBar from "@/components/ProgressBar"
-import { saveLead, trackEvent } from "@/app/actions"
+import { trackEvent } from "@/app/actions"
 import { getSessionId, getVisitorId, isReturner } from "@/lib/session"
 import { initPostHog, capture } from "@/lib/posthog"
 
@@ -175,7 +174,6 @@ export default function SpinClient({ offer, locale, variant }: { offer: Offer; l
   const [loading, setLoading] = useState(false)
   const [spinning, setSpinning] = useState(false)
   const [hasSpun, setHasSpun] = useState(false)
-  const [shake, setShake] = useState(false)
   const [sessionId, setSessionId] = useState("")
   const [visitorId, setVisitorId] = useState("")
   const [spotsLeft, setSpotsLeft] = useState(0)
@@ -221,7 +219,6 @@ export default function SpinClient({ offer, locale, variant }: { offer: Offer; l
   async function handleWin() {
     setSpinning(false)
     setHasSpun(true)
-    if (variant === "v3" || variant === "v5") { setShake(true); setTimeout(() => setShake(false), 600) }
     fireWinAnimation(variant)
     playSound("win")
     capture("win_reveal_shown", { offerId: offer.id, variant })
@@ -287,20 +284,39 @@ export default function SpinClient({ offer, locale, variant }: { offer: Offer; l
     "--accent-border": theme.accentBorder,
   } as React.CSSProperties
 
+  const fadeIn = {
+    animation: "fadeInUp 0.3s ease forwards",
+  }
+
   return (
     <>
+      <style>{`
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInScale {
+          from { opacity: 0; transform: scale(0.85); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes winPulse {
+          0%, 100% { transform: scale(1) rotate(0deg); }
+          25% { transform: scale(1.2) rotate(-5deg); }
+          75% { transform: scale(1.2) rotate(5deg); }
+        }
+        @keyframes checkPulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.1); }
+        }
+      `}</style>
+
       <ScrollTracker offerId={offer.id} variant={variant} locale={locale} sessionId={sessionId} visitorId={visitorId} />
       {!compliantMode && <RecentWinnersPopup accentColor={theme.accent} />}
       {offer.exitIntentEnabled && step === "spin" && (
         <ExitIntent offerId={offer.id} variant={variant} maxShows={offer.exitIntentMaxShows} cooldownHours={offer.exitIntentCooldownHours} skipReturners={offer.exitIntentSkipReturners} onSubmit={handleExitIntentSubmit} accentColor={theme.accent} isLight={theme.isLight} />
       )}
 
-      <motion.div
-        animate={shake ? { x: [-8, 8, -8, 8, -4, 4, 0] } : {}}
-        transition={{ duration: 0.5 }}
-        className="spin-page"
-        style={{ ...cssVars, background: theme.bg }}
-      >
+      <div className="spin-page" style={{ ...cssVars, background: theme.bg }}>
         <div className="spin-container">
 
           <ProgressBar step={step} accentColor={theme.accent} />
@@ -318,17 +334,15 @@ export default function SpinClient({ offer, locale, variant }: { offer: Offer; l
               🏆 OFFICIAL SWEEPSTAKES — FREE ENTRY — NO PURCHASE NECESSARY
             </div>
           ) : (
-            <motion.div
+            <div
               className="urgency-bar"
-              animate={{ opacity: spotsLeft <= 10 ? [1, 0.65, 1] : 1 }}
-              transition={{ repeat: spotsLeft <= 10 ? Infinity : 0, duration: 1.2 }}
               style={{
                 background: spotsLeft <= 10 ? "linear-gradient(90deg, #CC0000, #FF2222)" : `linear-gradient(90deg, ${theme.accentDim}, ${theme.accent})`,
                 color: "#000",
               }}
             >
               ⚡ ONLY {spotsLeft || "?"} SPOTS REMAINING · {viewersNow} VIEWING NOW
-            </motion.div>
+            </div>
           )}
 
           <div className="spin-logo" style={{ color: theme.accent, textShadow: `0 0 40px ${theme.accentGlow}` }}>
@@ -358,101 +372,136 @@ export default function SpinClient({ offer, locale, variant }: { offer: Offer; l
             </div>
           )}
 
-          <AnimatePresence mode="wait">
+          {step === "spin" && (
+            <div key="spin" style={fadeIn}>
+              <div className="spin-title" style={{ color: theme.textPrimary }}>
+                Win $25,000 Cash
+              </div>
+              <div className="wheel-outer">
+                <div className="wheel-glow-ring" style={{ background: `radial-gradient(circle, ${theme.accentGlow} 0%, transparent 70%)` }} />
+                <Wheel onWin={handleWin} variant={variant} spinning={spinning} hasSpun={hasSpun} onSpin={handleSpin} />
+              </div>
+              <SecurityBadges accentColor={theme.accent} textColor={theme.textSecondary} />
+              <div className="trust-row">
+                {["No purchase needed", "US residents", "18+"].map((t) => (
+                  <div key={t} className="trust-item" style={{ color: theme.textSecondary }}>✓ {t}</div>
+                ))}
+              </div>
+              <div className="legal-row">
+                <a href="/legal/privacy" style={{ color: theme.textSecondary }}>Privacy Policy</a>
+                <a href="/legal/terms" style={{ color: theme.textSecondary }}>Terms</a>
+                <a href="/legal/rules" style={{ color: theme.textSecondary }}>Official Rules</a>
+              </div>
+            </div>
+          )}
 
-            {step === "spin" && (
-              <motion.div key="spin" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-                <div className="spin-title" style={{ color: theme.textPrimary }}>
-                  Win $25,000 Cash
-                </div>
-                <div className="wheel-outer">
-                  <div className="wheel-glow-ring" style={{ background: `radial-gradient(circle, ${theme.accentGlow} 0%, transparent 70%)` }} />
-                  <Wheel onWin={handleWin} variant={variant} spinning={spinning} hasSpun={hasSpun} onSpin={handleSpin} />
-                </div>
-                <SecurityBadges accentColor={theme.accent} textColor={theme.textSecondary} />
-                <div className="trust-row">
-                  {["No purchase needed", "US residents", "18+"].map((t) => (
-                    <div key={t} className="trust-item" style={{ color: theme.textSecondary }}>✓ {t}</div>
-                  ))}
-                </div>
-                <div className="legal-row">
-                  <a href="/legal/privacy" style={{ color: theme.textSecondary }}>Privacy Policy</a>
-                  <a href="/legal/terms" style={{ color: theme.textSecondary }}>Terms</a>
-                  <a href="/legal/rules" style={{ color: theme.textSecondary }}>Official Rules</a>
-                </div>
-              </motion.div>
-            )}
+          {step === "win" && (
+            <div key="win" style={{ textAlign: "center", padding: "48px 0", animation: "fadeInScale 0.4s ease forwards" }}>
+              <div style={{ fontSize: "80px", marginBottom: "16px", animation: "winPulse 1.5s ease infinite" }}>🏆</div>
+              <div className="win-title" style={{ color: theme.winColor, textShadow: `0 0 40px ${theme.accentGlow}` }}>
+                {theme.winTitle}
+              </div>
+              <div className="win-sub" style={{ color: theme.textPrimary }}>Claim your entry now</div>
+            </div>
+          )}
 
-            {step === "win" && (
-              <motion.div key="win" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="win-screen">
-                <motion.div animate={{ scale: [1, 1.2, 1], rotate: [0, -5, 5, 0] }} transition={{ repeat: Infinity, duration: 1.5 }} style={{ fontSize: "80px", marginBottom: "16px" }}>🏆</motion.div>
-                <div className="win-title" style={{ color: theme.winColor, textShadow: `0 0 40px ${theme.accentGlow}` }}>
-                  {theme.winTitle}
+          {step === "email" && (
+            <div key="email" style={{ ...fadeIn }} className={theme.isLight ? "glass-card-light" : "glass-card"}>
+              <div style={{ textAlign: "center", marginBottom: "22px" }}>
+                <div style={{ fontSize: "52px", marginBottom: "10px" }}>🎁</div>
+                <div className="spin-title" style={{ color: theme.textPrimary, fontSize: "22px", marginBottom: "6px" }}>Complete Your Entry!</div>
+                <div style={{ fontSize: "14px", color: theme.textSecondary }}>Enter your details to submit your sweepstakes entry</div>
+              </div>
+              <form onSubmit={handleEmailSubmit}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" required className={theme.isLight ? "spin-input-light" : "spin-input"} style={{ color: theme.textPrimary }} />
+                  <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" required className={theme.isLight ? "spin-input-light" : "spin-input"} style={{ color: theme.textPrimary }} />
                 </div>
-                <div className="win-sub" style={{ color: theme.textPrimary }}>Claim your entry now</div>
-              </motion.div>
-            )}
-
-            {step === "email" && (
-              <motion.div key="email" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className={theme.isLight ? "glass-card-light" : "glass-card"}>
-                <div style={{ textAlign: "center", marginBottom: "22px" }}>
-                  <div style={{ fontSize: "52px", marginBottom: "10px" }}>🎁</div>
-                  <div className="spin-title" style={{ color: theme.textPrimary, fontSize: "22px", marginBottom: "6px" }}>Complete Your Entry!</div>
-                  <div style={{ fontSize: "14px", color: theme.textSecondary }}>Enter your details to submit your sweepstakes entry</div>
-                </div>
-                <form onSubmit={handleEmailSubmit}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                    <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" required className={theme.isLight ? "spin-input-light" : "spin-input"} style={{ color: theme.textPrimary }} />
-                    <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" required className={theme.isLight ? "spin-input-light" : "spin-input"} style={{ color: theme.textPrimary }} />
-                  </div>
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" required className={theme.isLight ? "spin-input-light" : "spin-input"} style={{ color: theme.textPrimary }} />
-                  <motion.button type="submit" disabled={loading} whileTap={{ scale: 0.97 }} className="spin-cta" style={{ background: loading ? "#333" : `linear-gradient(135deg, ${theme.accentDim}, ${theme.accent})`, color: loading ? "#666" : "#000", boxShadow: loading ? "none" : `0 8px 28px ${theme.accentGlow}` }}>
-                    {loading ? "Processing..." : "SUBMIT MY ENTRY →"}
-                  </motion.button>
-                </form>
-                <div style={{ fontSize: "11px", color: theme.textSecondary, textAlign: "center", marginTop: "12px", opacity: 0.5 }}>
-                  By entering you agree to our <a href="/legal/terms" style={{ color: theme.textSecondary }}>terms</a> and <a href="/legal/rules" style={{ color: theme.textSecondary }}>official rules</a>. No purchase necessary.
-                </div>
-              </motion.div>
-            )}
-
-            {step === "phone" && (
-              <motion.div key="phone" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className={theme.isLight ? "glass-card-light" : "glass-card"}>
-                <div style={{ textAlign: "center", marginBottom: "22px" }}>
-                  <div style={{ fontSize: "52px", marginBottom: "10px" }}>📱</div>
-                  <div className="spin-title" style={{ color: theme.textPrimary, fontSize: "22px", marginBottom: "8px" }}>Double Your Chances!</div>
-                  <div className="upsell-badge" style={{ background: theme.accent, color: "#000" }}>2× MORE ENTRIES</div>
-                  <div style={{ fontSize: "14px", color: theme.textSecondary, marginTop: "10px" }}>Add your phone for twice the chances to win</div>
-                </div>
-                <form onSubmit={handlePhoneSubmit}>
-                  <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 (555) 000-0000" className={theme.isLight ? "spin-input-light" : "spin-input"} style={{ color: theme.textPrimary }} />
-                  <motion.button type="submit" disabled={loading} whileTap={{ scale: 0.97 }} className="spin-cta" style={{ background: loading ? "#333" : `linear-gradient(135deg, ${theme.accentDim}, ${theme.accent})`, color: loading ? "#666" : "#000", boxShadow: loading ? "none" : `0 8px 28px ${theme.accentGlow}` }}>
-                    {loading ? "Processing..." : "2× MY ENTRIES →"}
-                  </motion.button>
-                </form>
-                <button onClick={() => setStep("done")} className="skip-btn" style={{ color: theme.textSecondary }}>
-                  No thanks, skip
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" required className={theme.isLight ? "spin-input-light" : "spin-input"} style={{ color: theme.textPrimary }} />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  style={{
+                    width: "100%",
+                    padding: "16px",
+                    background: loading ? "#333" : `linear-gradient(135deg, ${theme.accentDim}, ${theme.accent})`,
+                    color: loading ? "#666" : "#000",
+                    fontWeight: 800,
+                    fontSize: "16px",
+                    border: "none",
+                    borderRadius: "14px",
+                    cursor: loading ? "not-allowed" : "pointer",
+                    letterSpacing: "0.04em",
+                    fontFamily: "var(--font-oswald), sans-serif",
+                    textTransform: "uppercase" as const,
+                    boxShadow: loading ? "none" : `0 8px 28px ${theme.accentGlow}`,
+                    transition: "transform 0.1s",
+                  }}
+                >
+                  {loading ? "Processing..." : "SUBMIT MY ENTRY →"}
                 </button>
-              </motion.div>
-            )}
+              </form>
+              <div style={{ fontSize: "11px", color: theme.textSecondary, textAlign: "center", marginTop: "12px", opacity: 0.5 }}>
+                By entering you agree to our <a href="/legal/terms" style={{ color: theme.textSecondary }}>terms</a> and <a href="/legal/rules" style={{ color: theme.textSecondary }}>official rules</a>. No purchase necessary.
+              </div>
+            </div>
+          )}
 
-            {step === "done" && (
-              <motion.div key="done" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="done-screen">
-                <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: 3, duration: 0.5 }} style={{ fontSize: "80px", marginBottom: "16px" }}>✅</motion.div>
-                <div className="win-title" style={{ color: theme.textPrimary, fontSize: "32px" }}>You&apos;re Entered!</div>
-                <div className="win-sub" style={{ color: theme.textSecondary }}>We&apos;ll contact you if you win. Good luck!</div>
-                <div className="entry-card">
-                  <div className="entry-label" style={{ color: theme.textSecondary }}>Your entry number</div>
-                  <div className="entry-num" style={{ color: theme.accent }}>
-                    #{Math.floor(Math.random() * 90000) + 10000}
-                  </div>
+          {step === "phone" && (
+            <div key="phone" style={{ ...fadeIn }} className={theme.isLight ? "glass-card-light" : "glass-card"}>
+              <div style={{ textAlign: "center", marginBottom: "22px" }}>
+                <div style={{ fontSize: "52px", marginBottom: "10px" }}>📱</div>
+                <div className="spin-title" style={{ color: theme.textPrimary, fontSize: "22px", marginBottom: "8px" }}>Double Your Chances!</div>
+                <div className="upsell-badge" style={{ background: theme.accent, color: "#000" }}>2× MORE ENTRIES</div>
+                <div style={{ fontSize: "14px", color: theme.textSecondary, marginTop: "10px" }}>Add your phone for twice the chances to win</div>
+              </div>
+              <form onSubmit={handlePhoneSubmit}>
+                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 (555) 000-0000" className={theme.isLight ? "spin-input-light" : "spin-input"} style={{ color: theme.textPrimary }} />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  style={{
+                    width: "100%",
+                    padding: "16px",
+                    background: loading ? "#333" : `linear-gradient(135deg, ${theme.accentDim}, ${theme.accent})`,
+                    color: loading ? "#666" : "#000",
+                    fontWeight: 800,
+                    fontSize: "16px",
+                    border: "none",
+                    borderRadius: "14px",
+                    cursor: loading ? "not-allowed" : "pointer",
+                    letterSpacing: "0.04em",
+                    fontFamily: "var(--font-oswald), sans-serif",
+                    textTransform: "uppercase" as const,
+                    boxShadow: loading ? "none" : `0 8px 28px ${theme.accentGlow}`,
+                    transition: "transform 0.1s",
+                  }}
+                >
+                  {loading ? "Processing..." : "2× MY ENTRIES →"}
+                </button>
+              </form>
+              <button onClick={() => setStep("done")} className="skip-btn" style={{ color: theme.textSecondary }}>
+                No thanks, skip
+              </button>
+            </div>
+          )}
+
+          {step === "done" && (
+            <div key="done" style={{ textAlign: "center", padding: "40px 0", animation: "fadeInScale 0.4s ease forwards" }}>
+              <div style={{ fontSize: "80px", marginBottom: "16px", animation: "checkPulse 0.5s ease 3" }}>✅</div>
+              <div className="win-title" style={{ color: theme.textPrimary, fontSize: "32px" }}>You&apos;re Entered!</div>
+              <div className="win-sub" style={{ color: theme.textSecondary }}>We&apos;ll contact you if you win. Good luck!</div>
+              <div className="entry-card">
+                <div className="entry-label" style={{ color: theme.textSecondary }}>Your entry number</div>
+                <div className="entry-num" style={{ color: theme.accent }}>
+                  #{Math.floor(Math.random() * 90000) + 10000}
                 </div>
-              </motion.div>
-            )}
+              </div>
+            </div>
+          )}
 
-          </AnimatePresence>
         </div>
-      </motion.div>
+      </div>
     </>
   )
 }

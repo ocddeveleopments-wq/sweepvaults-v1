@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useRef } from "react"
-import { motion } from "framer-motion"
 
 const VARIANT_CONFIGS = {
   v1: {
@@ -158,7 +157,6 @@ export default function Wheel({ onWin, variant = "v1", spinning, hasSpun, onSpin
       ctx.lineWidth = 1
       ctx.stroke()
 
-      // Highlight
       const highlight = Math.max(0, Math.sin(midAngle + Math.PI / 2) * 0.12)
       if (highlight > 0) {
         ctx.beginPath()
@@ -169,7 +167,6 @@ export default function Wheel({ onWin, variant = "v1", spinning, hasSpun, onSpin
         ctx.fill()
       }
 
-      // Text — centered in segment
       ctx.save()
       ctx.translate(cx, cy)
       ctx.rotate(midAngle)
@@ -208,7 +205,6 @@ export default function Wheel({ onWin, variant = "v1", spinning, hasSpun, onSpin
     ctx.fillText("★", cx, cy)
     ctx.shadowBlur = 0
 
-    // Notches on outer ring
     for (let i = 0; i < config.segments.length; i++) {
       const angle = rotation + i * segmentAngle
       ctx.beginPath()
@@ -256,7 +252,6 @@ export default function Wheel({ onWin, variant = "v1", spinning, hasSpun, onSpin
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px" }}>
       <div style={{ position: "relative" }}>
-        {/* Pointer */}
         <div style={{
           position: "absolute",
           top: "50%",
@@ -271,7 +266,6 @@ export default function Wheel({ onWin, variant = "v1", spinning, hasSpun, onSpin
           </svg>
         </div>
 
-        {/* Glow behind wheel */}
         <div style={{
           position: "absolute",
           inset: "-20px",
@@ -281,26 +275,23 @@ export default function Wheel({ onWin, variant = "v1", spinning, hasSpun, onSpin
         }} />
 
         <canvas
-  ref={canvasRef}
-  width={300}
-  height={300}
-  style={{
-    borderRadius: "50%",
-    display: "block",
-    position: "relative",
-    zIndex: 1,
-    width: "min(300px, 75vw)",
-    height: "min(300px, 75vw)",
-  }}
-/>
+          ref={canvasRef}
+          width={300}
+          height={300}
+          style={{
+            borderRadius: "50%",
+            display: "block",
+            position: "relative",
+            zIndex: 1,
+            width: "min(300px, 75vw)",
+            height: "min(300px, 75vw)",
+          }}
+        />
       </div>
 
-      {/* Spin button */}
-      <motion.button
+      <button
         onClick={handleSpin}
         disabled={spinning || hasSpun}
-        whileTap={{ scale: 0.95 }}
-        whileHover={{ scale: spinning || hasSpun ? 1 : 1.05 }}
         style={{
           padding: "16px 48px",
           borderRadius: "50px",
@@ -309,7 +300,7 @@ export default function Wheel({ onWin, variant = "v1", spinning, hasSpun, onSpin
           border: "none",
           cursor: spinning || hasSpun ? "not-allowed" : "pointer",
           letterSpacing: "0.08em",
-          fontFamily: "'Oswald', sans-serif",
+          fontFamily: "var(--font-oswald), sans-serif",
           background: spinning || hasSpun
             ? "#333"
             : `linear-gradient(135deg, ${config.outerRing}, ${config.innerRing})`,
@@ -317,13 +308,17 @@ export default function Wheel({ onWin, variant = "v1", spinning, hasSpun, onSpin
           boxShadow: spinning || hasSpun
             ? "none"
             : `0 8px 32px ${config.shadowColor}, 0 2px 8px rgba(0,0,0,0.4)`,
-          transition: "all 0.2s",
+          transition: "transform 0.1s, opacity 0.2s",
           textShadow: "0 1px 3px rgba(0,0,0,0.5)",
           textTransform: "uppercase" as const,
         }}
+        onMouseDown={(e) => { if (!spinning && !hasSpun) (e.currentTarget as HTMLElement).style.transform = "scale(0.95)" }}
+        onMouseUp={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1)" }}
+        onTouchStart={(e) => { if (!spinning && !hasSpun) (e.currentTarget as HTMLElement).style.transform = "scale(0.95)" }}
+        onTouchEnd={(e) => { (e.currentTarget as HTMLElement).style.transform = "scale(1)" }}
       >
         {spinning ? "SPINNING..." : hasSpun ? "ENTERED! ✓" : "🎰 SPIN TO WIN FREE"}
-      </motion.button>
+      </button>
     </div>
   )
 }
