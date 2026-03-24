@@ -30,7 +30,8 @@ async function SpinPageContent({ locale, variant }: { locale: string; variant: s
       })
       const cap = (cachedOffer as any).dailyCap ?? 15
       if (todayLeads < cap) {
-        offer = { ...cachedOffer, todayLeads, remainingToday: cap - todayLeads }
+        offer = { ...(cachedOffer as Record<string, any>), todayLeads, remainingToday: cap - todayLeads }
+
       }
     }
   } catch {}
