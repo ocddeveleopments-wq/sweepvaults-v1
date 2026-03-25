@@ -196,7 +196,6 @@ export default function SpinClient({
   const [viewersNow, setViewersNow] = useState(0)
   const [error, setError]           = useState<string | null>(null)
 
-  // Store leadId across steps so phone upsell can update the same record
   const leadIdRef = useRef<string | null>(null)
 
   const theme        = THEMES[variant as keyof typeof THEMES] ?? THEMES.v1
@@ -205,15 +204,19 @@ export default function SpinClient({
 
   useEffect(() => {
     initPostHog()
+
+    // *** FIX: check returner BEFORE getVisitorId() writes the key ***
+    const returner = isReturner()
     const sid = getSessionId()
     const vid = getVisitorId()
     setSessionId(sid)
     setVisitorId(vid)
+
     const utms = getUTMParams()
     capture("page_view", {
       offerId: offer.id, locale, variant,
       sessionId: sid, visitorId: vid,
-      returner: isReturner(),
+      returner,
       ...utms,
     })
     trackEvent({ event: "page_view", offerId: offer.id, locale, variant, sessionId: sid, visitorId: vid })
@@ -304,11 +307,9 @@ export default function SpinClient({
       })
 
       if (testMode) {
-        // TEST MODE — confirm DB write, no redirect
         console.log("✅ TEST MODE — Lead saved to DB:", result.leadId)
         console.log("📋 Lead data:", { email, firstName, lastName, ...utms })
       } else {
-        // LIVE MODE — redirect to MaxBounty with prepop + leadId for callback
         const affiliateUrl = buildAffiliateUrl(firstName, lastName, email, result.leadId)
         window.location.href = affiliateUrl
       }
@@ -329,10 +330,8 @@ export default function SpinClient({
     playSound("click")
 
     if (leadIdRef.current) {
-      // Update existing lead record with phone
       await updateLeadPhone(leadIdRef.current, phone)
     } else {
-      // Fallback — create new record if somehow leadId was lost
       await saveLead({
         offerId: offer.id,
         email,

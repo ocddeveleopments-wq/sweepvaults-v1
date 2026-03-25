@@ -22,6 +22,7 @@ export function getVisitorId(): string {
 
 export function isReturner(): boolean {
   if (typeof window === "undefined") return false
+  // Must be called BEFORE getVisitorId() writes the key
   return localStorage.getItem("sv_visitor") !== null
 }
 
