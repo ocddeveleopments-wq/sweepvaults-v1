@@ -19,7 +19,7 @@ model Offer {
   prizeTheme              String?
   testLeads               Int      @default(0)
   epc                     Float?
-  dailyCap                Int      @default(15)
+  dailyCap                Int      @default(50)
   rotationOrder           Int      @default(0)
   exitIntentEnabled       Boolean  @default(true)
   exitIntentMaxShows      Int      @default(2)
@@ -31,24 +31,35 @@ model Offer {
 }
 
 model Lead {
-  id          String   @id @default(cuid())
-  offerId     String
-  firstName   String?
-  lastName    String?
-  email       String?
-  phone       String?
-  subId       String?
-  locale      String   @default("en")
-  variant     String?
-  ip          String?
-  country     String?
-  converted   Boolean  @default(false)
-  convertedAt DateTime?
-  utmSource   String?
-  utmMedium   String?
-  utmCampaign String?
-  createdAt   DateTime @default(now())
-  offer       Offer    @relation(fields: [offerId], references: [id])
+  id             String    @id @default(cuid())
+  offerId        String
+  firstName      String?
+  lastName       String?
+  email          String?
+  phone          String?
+  subId          String?
+  locale         String    @default("en")
+  variant        String?
+  ip             String?
+  country        String?
+  sessionId      String?
+  visitorId      String?
+  converted      Boolean   @default(false)
+  convertedAt    DateTime?
+  mbConversionId String?
+  mbRate         Float?
+  utmSource      String?
+  utmMedium      String?
+  utmCampaign    String?
+  utmContent     String?
+  utmTerm        String?
+  ageGroup       String?
+  gender         String?
+  deviceType     String?
+  adCost         Float?
+  zoneId         String?
+  createdAt      DateTime  @default(now())
+  offer          Offer     @relation(fields: [offerId], references: [id])
 }
 
 model AnalyticsEvent {

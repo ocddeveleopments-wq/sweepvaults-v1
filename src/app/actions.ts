@@ -18,28 +18,75 @@ export async function saveLead(data: {
   utm_source?: string
   utm_medium?: string
   utm_campaign?: string
+  utm_content?: string
+  utm_term?: string
+  age_group?: string
+  gender?: string
+  device_type?: string
+  cost?: string
+  zone_id?: string
 }) {
   try {
     const lead = await prisma.lead.create({
       data: {
-        offerId: data.offerId,
-        email: data.email,
-        phone: data.phone,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        subId: data.subId,
-        locale: data.locale,
-        variant: data.variant,
-        ip: data.ip,
-        country: data.country,
-        utmSource: data.utm_source,
-        utmMedium: data.utm_medium,
+        offerId:     data.offerId,
+        email:       data.email,
+        phone:       data.phone,
+        firstName:   data.firstName,
+        lastName:    data.lastName,
+        subId:       data.subId,
+        locale:      data.locale,
+        variant:     data.variant,
+        ip:          data.ip,
+        country:     data.country,
+        sessionId:   data.sessionId,
+        visitorId:   data.visitorId,
+        utmSource:   data.utm_source,
+        utmMedium:   data.utm_medium,
         utmCampaign: data.utm_campaign,
+        utmContent:  data.utm_content,
+        utmTerm:     data.utm_term,
+        ageGroup:    data.age_group,
+        gender:      data.gender,
+        deviceType:  data.device_type,
+        adCost:      data.cost ? parseFloat(data.cost) : undefined,
+        zoneId:      data.zone_id,
       },
     })
     return { success: true, leadId: lead.id }
   } catch (error) {
     console.error("saveLead error:", error)
+    return { success: false, leadId: null }
+  }
+}
+
+export async function updateLeadPhone(leadId: string, phone: string) {
+  try {
+    await prisma.lead.update({
+      where: { id: leadId },
+      data:  { phone },
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("updateLeadPhone error:", error)
+    return { success: false }
+  }
+}
+
+export async function markLeadConverted(leadId: string, conversionId?: string, rate?: number) {
+  try {
+    await prisma.lead.update({
+      where: { id: leadId },
+      data: {
+        converted:      true,
+        convertedAt:    new Date(),
+        mbConversionId: conversionId,
+        mbRate:         rate,
+      },
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("markLeadConverted error:", error)
     return { success: false }
   }
 }
@@ -49,7 +96,6 @@ export async function getActiveOffer(locale: string) {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    // Get all active offers for this locale sorted by rotation order
     const offers = await prisma.offer.findMany({
       where: {
         active: true,
@@ -60,22 +106,19 @@ export async function getActiveOffer(locale: string) {
 
     if (offers.length === 0) return null
 
-    // Find first offer that hasn't hit its daily cap
     for (const offer of offers) {
       const todayLeads = await prisma.lead.count({
         where: {
-          offerId: offer.id,
+          offerId:   offer.id,
           createdAt: { gte: today },
         },
       })
-
       if (todayLeads < offer.dailyCap) {
         return { ...offer, todayLeads, remainingToday: offer.dailyCap - todayLeads }
       }
     }
 
-    // All offers at cap — return last offer anyway so page still loads
-    const lastOffer = offers[offers.length - 1]
+    const lastOffer  = offers[offers.length - 1]
     const todayLeads = await prisma.lead.count({
       where: { offerId: lastOffer.id, createdAt: { gte: today } },
     })
@@ -100,12 +143,12 @@ export async function trackEvent(data: {
   try {
     await prisma.analyticsEvent.create({
       data: {
-        event: data.event,
-        offerId: data.offerId,
-        locale: data.locale,
-        variant: data.variant,
-        subId: data.subId,
-        depth: data.depth,
+        event:     data.event,
+        offerId:   data.offerId,
+        locale:    data.locale,
+        variant:   data.variant,
+        subId:     data.subId,
+        depth:     data.depth,
         sessionId: data.sessionId,
         visitorId: data.visitorId,
       },

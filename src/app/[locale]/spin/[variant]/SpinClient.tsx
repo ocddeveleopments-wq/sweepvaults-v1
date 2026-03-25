@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import confetti from "canvas-confetti"
 import Wheel from "@/components/Wheel"
 import ExitIntent from "@/components/ExitIntent"
@@ -10,7 +10,7 @@ import CountdownTimer from "@/components/CountdownTimer"
 import RecentWinnersPopup from "@/components/RecentWinnersPopup"
 import SecurityBadges from "@/components/SecurityBadges"
 import ProgressBar from "@/components/ProgressBar"
-import { trackEvent } from "@/app/actions"
+import { saveLead, updateLeadPhone, trackEvent } from "@/app/actions"
 import { getSessionId, getVisitorId, isReturner } from "@/lib/session"
 import { initPostHog, capture } from "@/lib/posthog"
 
@@ -128,9 +128,16 @@ function getUTMParams() {
   if (typeof window === "undefined") return {}
   const p = new URLSearchParams(window.location.search)
   return {
-    utm_source: p.get("utm_source") ?? undefined,
-    utm_medium: p.get("utm_medium") ?? undefined,
+    utm_source:   p.get("utm_source")   ?? undefined,
+    utm_medium:   p.get("utm_medium")   ?? undefined,
     utm_campaign: p.get("utm_campaign") ?? undefined,
+    utm_content:  p.get("utm_content")  ?? undefined,
+    utm_term:     p.get("utm_term")     ?? undefined,
+    age_group:    p.get("age")          ?? undefined,
+    gender:       p.get("gender")       ?? undefined,
+    device_type:  p.get("device")       ?? undefined,
+    cost:         p.get("cost")         ?? undefined,
+    zone_id:      p.get("utm_content")  ?? undefined,
   }
 }
 
@@ -138,7 +145,7 @@ function playSound(type: "win" | "click") {
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
     if (type === "click") {
-      const osc = ctx.createOscillator()
+      const osc  = ctx.createOscillator()
       const gain = ctx.createGain()
       osc.connect(gain)
       gain.connect(ctx.destination)
@@ -150,7 +157,7 @@ function playSound(type: "win" | "click") {
     } else {
       const notes = [523, 659, 784, 1047]
       notes.forEach((freq, i) => {
-        const osc = ctx.createOscillator()
+        const osc  = ctx.createOscillator()
         const gain = ctx.createGain()
         osc.connect(gain)
         gain.connect(ctx.destination)
@@ -165,23 +172,36 @@ function playSound(type: "win" | "click") {
   } catch {}
 }
 
-export default function SpinClient({ offer, locale, variant }: { offer: Offer; locale: string; variant: string }) {
-  const [step, setStep] = useState<Step>("spin")
-  const [email, setEmail] = useState("")
-  const [firstName, setFirstName] = useState("")
-  const [lastName, setLastName] = useState("")
-  const [phone, setPhone] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [spinning, setSpinning] = useState(false)
-  const [hasSpun, setHasSpun] = useState(false)
-  const [sessionId, setSessionId] = useState("")
-  const [visitorId, setVisitorId] = useState("")
-  const [spotsLeft, setSpotsLeft] = useState(0)
+export default function SpinClient({
+  offer,
+  locale,
+  variant,
+}: {
+  offer: Offer
+  locale: string
+  variant: string
+}) {
+  const [step, setStep]             = useState<Step>("spin")
+  const [email, setEmail]           = useState("")
+  const [firstName, setFirstName]   = useState("")
+  const [lastName, setLastName]     = useState("")
+  const [phone, setPhone]           = useState("")
+  const [loading, setLoading]       = useState(false)
+  const [spinning, setSpinning]     = useState(false)
+  const [hasSpun, setHasSpun]       = useState(false)
+  const [sessionId, setSessionId]   = useState("")
+  const [visitorId, setVisitorId]   = useState("")
+  const [spotsLeft, setSpotsLeft]   = useState(0)
   const [enteredToday, setEnteredToday] = useState(0)
   const [viewersNow, setViewersNow] = useState(0)
+  const [error, setError]           = useState<string | null>(null)
 
-  const theme = THEMES[variant as keyof typeof THEMES] ?? THEMES.v1
+  // Store leadId across steps so phone upsell can update the same record
+  const leadIdRef = useRef<string | null>(null)
+
+  const theme        = THEMES[variant as keyof typeof THEMES] ?? THEMES.v1
   const compliantMode = process.env.NEXT_PUBLIC_COMPLIANT_MODE === "true"
+  const testMode     = process.env.NEXT_PUBLIC_TEST_MODE === "true"
 
   useEffect(() => {
     initPostHog()
@@ -190,86 +210,116 @@ export default function SpinClient({ offer, locale, variant }: { offer: Offer; l
     setSessionId(sid)
     setVisitorId(vid)
     const utms = getUTMParams()
-    capture("page_view", { offerId: offer.id, locale, variant, sessionId: sid, visitorId: vid, returner: isReturner(), ...utms })
+    capture("page_view", {
+      offerId: offer.id, locale, variant,
+      sessionId: sid, visitorId: vid,
+      returner: isReturner(),
+      ...utms,
+    })
     trackEvent({ event: "page_view", offerId: offer.id, locale, variant, sessionId: sid, visitorId: vid })
 
-    const baseSpots = Math.floor(Math.random() * 35) + 12
-    setSpotsLeft(baseSpots)
+    const daySeed = new Date().getDate() + new Date().getMonth() * 31
+    setSpotsLeft(7 + (daySeed % 6))
     const hour = new Date().getHours()
     setEnteredToday(1200 + hour * 180 + Math.floor(Math.random() * 300))
-    setViewersNow(Math.floor(Math.random() * 18) + 8)
+    setViewersNow(23 + (daySeed % 44))
 
     const spotsInterval = setInterval(() => {
       setSpotsLeft((p) => (p <= 3 ? p : Math.random() > 0.6 ? p - 1 : p))
     }, Math.floor(Math.random() * 7000) + 8000)
 
     const viewersInterval = setInterval(() => {
-      setViewersNow((p) => Math.max(5, Math.min(30, p + Math.floor(Math.random() * 3) - 1)))
-    }, 5000)
+      setViewersNow((p) => Math.max(18, Math.min(80, p + Math.floor(Math.random() * 5) - 2)))
+    }, 8000)
 
-    return () => { clearInterval(spotsInterval); clearInterval(viewersInterval) }
+    const enteredInterval = setInterval(() => {
+      setEnteredToday((p) => p + Math.floor(Math.random() * 3))
+    }, 45000)
+
+    return () => {
+      clearInterval(spotsInterval)
+      clearInterval(viewersInterval)
+      clearInterval(enteredInterval)
+    }
   }, [])
 
   function handleSpin() {
     setSpinning(true)
     playSound("click")
-    capture("spin_clicked", { offerId: offer.id, variant })
+    capture("spin_clicked", { offerId: offer.id, variant, ...getUTMParams() })
   }
 
-async function handleWin() {
-  setSpinning(false)
-  setHasSpun(true)
-  fireWinAnimation(variant)
-  playSound("win")
-  capture("win_reveal_shown", { offerId: offer.id, variant })
-  capture("modal_shown", { result: "$25,000", offerId: offer.id, variant })
-  setStep("win")
-  setTimeout(() => setStep("email"), 2800)
-}
+  async function handleWin() {
+    setSpinning(false)
+    setHasSpun(true)
+    fireWinAnimation(variant)
+    playSound("win")
+    capture("win_reveal_shown", { offerId: offer.id, variant })
+    capture("modal_shown", { result: "$25,000", offerId: offer.id, variant })
+    setStep("win")
+    setTimeout(() => setStep("email"), 2800)
+  }
 
   function buildAffiliateUrl(first: string, last: string, emailVal: string, leadId: string) {
-  const prepop = `firstName=${encodeURIComponent(first)}&lastName=${encodeURIComponent(last)}&email=${encodeURIComponent(emailVal)}`
-  const x = encodeURIComponent(prepop)
-  const base = offer.affiliatePostUrl
-  const subId = leadId
-  return `${base}&x=${x}&s2=${subId}`
-}
-
-async function postToAffiliate(emailVal: string, leadId: string, first: string, last: string) {
-  if (!offer.affiliatePostUrl || process.env.NEXT_PUBLIC_TEST_MODE === "true") return
-  try {
-    const affiliateUrl = buildAffiliateUrl(first, last, emailVal, leadId)
-    window.open(affiliateUrl, "_blank")
-  } catch {}
-}
-
-  async function saveLeadAPI(data: Record<string, any>) {
-    const res = await fetch("/api/leads", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    })
-    return res.json()
+    const prepop = [
+      `firstName=${encodeURIComponent(first)}`,
+      `lastName=${encodeURIComponent(last)}`,
+      `email=${encodeURIComponent(emailVal)}`,
+    ].join("&")
+    return `${offer.affiliatePostUrl}&x=${encodeURIComponent(prepop)}&s2=${leadId}`
   }
 
   async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!email || !firstName || !lastName) return
     setLoading(true)
+    setError(null)
     playSound("click")
-    const utms = getUTMParams()
-    const result = await saveLeadAPI({ offerId: offer.id, email, firstName, lastName, locale, variant, sessionId, visitorId, ...utms })
-    if (result.success && result.leadId) {
-      capture("email_submitted", { offerId: offer.id, variant, locale })
-      await postToAffiliate(email, result.leadId, firstName, lastName)
-    }
-    setLoading(false)
-    setStep("phone")
-  }
 
-  async function handleExitIntentSubmit(emailVal: string, first: string, last: string) {
-    const result = await saveLeadAPI({ offerId: offer.id, email: emailVal, firstName: first, lastName: last, locale, variant: `${variant}_exit`, sessionId, visitorId })
-    if (result.success && result.leadId) await postToAffiliate(emailVal, result.leadId, first, last)
+    const utms = getUTMParams()
+
+    const result = await saveLead({
+      offerId:    offer.id,
+      email,
+      firstName,
+      lastName,
+      locale,
+      variant,
+      sessionId,
+      visitorId,
+      ...utms,
+    })
+
+    if (result.success && result.leadId) {
+      leadIdRef.current = result.leadId
+
+      capture("lead_submitted", {
+        offerId:  offer.id,
+        variant,
+        locale,
+        leadId:   result.leadId,
+        zone_id:  utms.utm_content,
+        age_group: utms.age_group,
+        cost:     utms.cost,
+      })
+
+      if (testMode) {
+        // TEST MODE — confirm DB write, no redirect
+        console.log("✅ TEST MODE — Lead saved to DB:", result.leadId)
+        console.log("📋 Lead data:", { email, firstName, lastName, ...utms })
+      } else {
+        // LIVE MODE — redirect to MaxBounty with prepop + leadId for callback
+        const affiliateUrl = buildAffiliateUrl(firstName, lastName, email, result.leadId)
+        window.location.href = affiliateUrl
+      }
+
+      setStep("phone")
+    } else {
+      console.error("❌ Lead save failed")
+      setError("Something went wrong. Please try again.")
+    }
+
+    setLoading(false)
   }
 
   async function handlePhoneSubmit(e: React.FormEvent) {
@@ -277,48 +327,99 @@ async function postToAffiliate(emailVal: string, leadId: string, first: string, 
     if (!phone) return
     setLoading(true)
     playSound("click")
-    await saveLeadAPI({ offerId: offer.id, email, phone, firstName, lastName, locale, variant, sessionId, visitorId })
+
+    if (leadIdRef.current) {
+      // Update existing lead record with phone
+      await updateLeadPhone(leadIdRef.current, phone)
+    } else {
+      // Fallback — create new record if somehow leadId was lost
+      await saveLead({
+        offerId: offer.id,
+        email,
+        phone,
+        firstName,
+        lastName,
+        locale,
+        variant,
+        sessionId,
+        visitorId,
+      })
+    }
+
     capture("phone_upsell_submitted", { offerId: offer.id, variant, locale })
     setLoading(false)
     setStep("done")
   }
 
+  async function handleExitIntentSubmit(emailVal: string, first: string, last: string) {
+    const utms = getUTMParams()
+    const result = await saveLead({
+      offerId:   offer.id,
+      email:     emailVal,
+      firstName: first,
+      lastName:  last,
+      locale,
+      variant:   `${variant}_exit`,
+      sessionId,
+      visitorId,
+      ...utms,
+    })
+
+    if (result.success && result.leadId) {
+      capture("exit_intent_submitted", { offerId: offer.id, variant, leadId: result.leadId })
+
+      if (!testMode && offer.affiliatePostUrl) {
+        const affiliateUrl = buildAffiliateUrl(first, last, emailVal, result.leadId)
+        window.open(affiliateUrl, "_blank")
+      } else {
+        console.log("✅ TEST MODE — Exit intent lead saved:", result.leadId)
+      }
+    }
+  }
+
   const cssVars = {
-    "--accent": theme.accent,
-    "--accent-glow": theme.accentGlow,
+    "--accent":        theme.accent,
+    "--accent-glow":   theme.accentGlow,
     "--accent-border": theme.accentBorder,
   } as React.CSSProperties
 
-  const fadeIn = {
-    animation: "fadeInUp 0.3s ease forwards",
-  }
+  const fadeIn = { animation: "fadeInUp 0.3s ease forwards" }
 
   return (
     <>
       <style>{`
         @keyframes fadeInUp {
           from { opacity: 0; transform: translateY(16px); }
-          to { opacity: 1; transform: translateY(0); }
+          to   { opacity: 1; transform: translateY(0); }
         }
         @keyframes fadeInScale {
           from { opacity: 0; transform: scale(0.85); }
-          to { opacity: 1; transform: scale(1); }
+          to   { opacity: 1; transform: scale(1); }
         }
         @keyframes winPulse {
           0%, 100% { transform: scale(1) rotate(0deg); }
-          25% { transform: scale(1.2) rotate(-5deg); }
-          75% { transform: scale(1.2) rotate(5deg); }
+          25%       { transform: scale(1.2) rotate(-5deg); }
+          75%       { transform: scale(1.2) rotate(5deg); }
         }
         @keyframes checkPulse {
           0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.1); }
+          50%       { transform: scale(1.1); }
         }
       `}</style>
 
       <ScrollTracker offerId={offer.id} variant={variant} locale={locale} sessionId={sessionId} visitorId={visitorId} />
       {!compliantMode && <RecentWinnersPopup accentColor={theme.accent} />}
       {offer.exitIntentEnabled && step === "spin" && (
-        <ExitIntent offerId={offer.id} variant={variant} maxShows={offer.exitIntentMaxShows} cooldownHours={offer.exitIntentCooldownHours} skipReturners={offer.exitIntentSkipReturners} onSubmit={handleExitIntentSubmit} accentColor={theme.accent} isLight={theme.isLight} />
+        <ExitIntent
+          offerId={offer.id}
+          variant={variant}
+          maxShows={offer.exitIntentMaxShows}
+          cooldownHours={offer.exitIntentCooldownHours}
+          skipReturners={offer.exitIntentSkipReturners}
+          onSubmit={handleExitIntentSubmit}
+          accentColor={theme.accent}
+          isLight={theme.isLight}
+        />
       )}
 
       <div className="spin-page" style={{ ...cssVars, background: theme.bg }}>
@@ -342,11 +443,13 @@ async function postToAffiliate(emailVal: string, leadId: string, first: string, 
             <div
               className="urgency-bar"
               style={{
-                background: spotsLeft <= 10 ? "linear-gradient(90deg, #CC0000, #FF2222)" : `linear-gradient(90deg, ${theme.accentDim}, ${theme.accent})`,
+                background: spotsLeft <= 10
+                  ? "linear-gradient(90deg, #CC0000, #FF2222)"
+                  : `linear-gradient(90deg, ${theme.accentDim}, ${theme.accent})`,
                 color: "#000",
               }}
             >
-              ⚡ ONLY {spotsLeft || "?"} SPOTS REMAINING · {viewersNow} VIEWING NOW
+              ⚡ ONLY {spotsLeft} SPOTS REMAINING · {viewersNow} VIEWING NOW
             </div>
           )}
 
@@ -383,19 +486,30 @@ async function postToAffiliate(emailVal: string, leadId: string, first: string, 
                 Win $25,000 Cash
               </div>
               <div className="wheel-outer">
-                <div className="wheel-glow-ring" style={{ background: `radial-gradient(circle, ${theme.accentGlow} 0%, transparent 70%)` }} />
-                <Wheel onWin={handleWin} variant={variant} spinning={spinning} hasSpun={hasSpun} onSpin={handleSpin} />
+                <div
+                  className="wheel-glow-ring"
+                  style={{ background: `radial-gradient(circle, ${theme.accentGlow} 0%, transparent 70%)` }}
+                />
+                <Wheel
+                  onWin={handleWin}
+                  variant={variant}
+                  spinning={spinning}
+                  hasSpun={hasSpun}
+                  onSpin={handleSpin}
+                />
               </div>
               <SecurityBadges accentColor={theme.accent} textColor={theme.textSecondary} />
               <div className="trust-row">
                 {["No purchase needed", "US residents", "18+"].map((t) => (
-                  <div key={t} className="trust-item" style={{ color: theme.textSecondary }}>✓ {t}</div>
+                  <div key={t} className="trust-item" style={{ color: theme.textSecondary }}>
+                    ✓ {t}
+                  </div>
                 ))}
               </div>
               <div className="legal-row">
                 <a href="/legal/privacy" style={{ color: theme.textSecondary }}>Privacy Policy</a>
-                <a href="/legal/terms" style={{ color: theme.textSecondary }}>Terms</a>
-                <a href="/legal/rules" style={{ color: theme.textSecondary }}>Official Rules</a>
+                <a href="/legal/terms"   style={{ color: theme.textSecondary }}>Terms</a>
+                <a href="/legal/rules"   style={{ color: theme.textSecondary }}>Official Rules</a>
               </div>
             </div>
           )}
@@ -414,34 +528,53 @@ async function postToAffiliate(emailVal: string, leadId: string, first: string, 
             <div key="email" style={{ ...fadeIn }} className={theme.isLight ? "glass-card-light" : "glass-card"}>
               <div style={{ textAlign: "center", marginBottom: "22px" }}>
                 <div style={{ fontSize: "52px", marginBottom: "10px" }}>🎁</div>
-                <div className="spin-title" style={{ color: theme.textPrimary, fontSize: "22px", marginBottom: "6px" }}>Complete Your Entry!</div>
-                <div style={{ fontSize: "14px", color: theme.textSecondary }}>Enter your details to submit your sweepstakes entry</div>
+                <div className="spin-title" style={{ color: theme.textPrimary, fontSize: "22px", marginBottom: "6px" }}>
+                  Complete Your Entry!
+                </div>
+                <div style={{ fontSize: "14px", color: theme.textSecondary }}>
+                  Enter your details to submit your sweepstakes entry
+                </div>
               </div>
+
               <form onSubmit={handleEmailSubmit}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-<input
-  type="text"
-  value={firstName}
-  onChange={(e) => setFirstName(e.target.value)}
-  onFocus={() => capture("form_started", { offerId: offer.id, variant })}
-  placeholder="First name"
-  required
-  className={theme.isLight ? "spin-input-light" : "spin-input"}
-  style={{ color: theme.textPrimary }}
-/>                  <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" required className={theme.isLight ? "spin-input-light" : "spin-input"} style={{ color: theme.textPrimary }} />
+                  <input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    onFocus={() => capture("form_started", { offerId: offer.id, variant })}
+                    placeholder="First name"
+                    required
+                    className={theme.isLight ? "spin-input-light" : "spin-input"}
+                    style={{ color: theme.textPrimary }}
+                  />
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Last name"
+                    required
+                    className={theme.isLight ? "spin-input-light" : "spin-input"}
+                    style={{ color: theme.textPrimary }}
+                  />
                 </div>
-<input
-  type="email"
-  value={email}
-  onChange={(e) => {
-    setEmail(e.target.value)
-    if (e.target.value.length === 1) capture("form_started", { offerId: offer.id, variant })
-  }}
-  placeholder="your@email.com"
-  required
-  className={theme.isLight ? "spin-input-light" : "spin-input"}
-  style={{ color: theme.textPrimary }}
-/>                <button
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  required
+                  className={theme.isLight ? "spin-input-light" : "spin-input"}
+                  style={{ color: theme.textPrimary }}
+                />
+
+                {error && (
+                  <div style={{ color: "#ff4444", fontSize: "13px", textAlign: "center", marginBottom: "8px" }}>
+                    {error}
+                  </div>
+                )}
+
+                <button
                   type="submit"
                   disabled={loading}
                   style={{
@@ -464,8 +597,12 @@ async function postToAffiliate(emailVal: string, leadId: string, first: string, 
                   {loading ? "Processing..." : "SUBMIT MY ENTRY →"}
                 </button>
               </form>
+
               <div style={{ fontSize: "11px", color: theme.textSecondary, textAlign: "center", marginTop: "12px", opacity: 0.5 }}>
-                By entering you agree to our <a href="/legal/terms" style={{ color: theme.textSecondary }}>terms</a> and <a href="/legal/rules" style={{ color: theme.textSecondary }}>official rules</a>. No purchase necessary.
+                By entering you agree to our{" "}
+                <a href="/legal/terms" style={{ color: theme.textSecondary }}>terms</a> and{" "}
+                <a href="/legal/rules" style={{ color: theme.textSecondary }}>official rules</a>.
+                No purchase necessary.
               </div>
             </div>
           )}
@@ -474,12 +611,25 @@ async function postToAffiliate(emailVal: string, leadId: string, first: string, 
             <div key="phone" style={{ ...fadeIn }} className={theme.isLight ? "glass-card-light" : "glass-card"}>
               <div style={{ textAlign: "center", marginBottom: "22px" }}>
                 <div style={{ fontSize: "52px", marginBottom: "10px" }}>📱</div>
-                <div className="spin-title" style={{ color: theme.textPrimary, fontSize: "22px", marginBottom: "8px" }}>Double Your Chances!</div>
-                <div className="upsell-badge" style={{ background: theme.accent, color: "#000" }}>2× MORE ENTRIES</div>
-                <div style={{ fontSize: "14px", color: theme.textSecondary, marginTop: "10px" }}>Add your phone for twice the chances to win</div>
+                <div className="spin-title" style={{ color: theme.textPrimary, fontSize: "22px", marginBottom: "8px" }}>
+                  Double Your Chances!
+                </div>
+                <div className="upsell-badge" style={{ background: theme.accent, color: "#000" }}>
+                  2× MORE ENTRIES
+                </div>
+                <div style={{ fontSize: "14px", color: theme.textSecondary, marginTop: "10px" }}>
+                  Add your phone for twice the chances to win
+                </div>
               </div>
               <form onSubmit={handlePhoneSubmit}>
-                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 (555) 000-0000" className={theme.isLight ? "spin-input-light" : "spin-input"} style={{ color: theme.textPrimary }} />
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+1 (555) 000-0000"
+                  className={theme.isLight ? "spin-input-light" : "spin-input"}
+                  style={{ color: theme.textPrimary }}
+                />
                 <button
                   type="submit"
                   disabled={loading}
@@ -512,11 +662,15 @@ async function postToAffiliate(emailVal: string, leadId: string, first: string, 
           {step === "done" && (
             <div key="done" style={{ textAlign: "center", padding: "40px 0", animation: "fadeInScale 0.4s ease forwards" }}>
               <div style={{ fontSize: "80px", marginBottom: "16px", animation: "checkPulse 0.5s ease 3" }}>✅</div>
-              <div className="win-title" style={{ color: theme.textPrimary, fontSize: "32px" }}>You&apos;re Entered!</div>
-              <div className="win-sub" style={{ color: theme.textSecondary }}>We&apos;ll contact you if you win. Good luck!</div>
+              <div className="win-title" style={{ color: theme.textPrimary, fontSize: "32px" }}>
+                You&apos;re Entered!
+              </div>
+              <div className="win-sub" style={{ color: theme.textSecondary }}>
+                We&apos;ll contact you if you win. Good luck!
+              </div>
               <div className="entry-card">
                 <div className="entry-label" style={{ color: theme.textSecondary }}>Your entry number</div>
-                <div className="entry-num" style={{ color: theme.accent }}>
+                <div className="entry-num"   style={{ color: theme.accent }}>
                   #{Math.floor(Math.random() * 90000) + 10000}
                 </div>
               </div>
