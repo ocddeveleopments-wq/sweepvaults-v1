@@ -181,31 +181,30 @@ export default function SpinClient({
   locale: string
   variant: string
 }) {
-  const [step, setStep]             = useState<Step>("spin")
-  const [email, setEmail]           = useState("")
-  const [firstName, setFirstName]   = useState("")
-  const [lastName, setLastName]     = useState("")
-  const [phone, setPhone]           = useState("")
-  const [loading, setLoading]       = useState(false)
-  const [spinning, setSpinning]     = useState(false)
-  const [hasSpun, setHasSpun]       = useState(false)
-  const [sessionId, setSessionId]   = useState("")
-  const [visitorId, setVisitorId]   = useState("")
-  const [spotsLeft, setSpotsLeft]   = useState(0)
+  const [step, setStep]               = useState<Step>("spin")
+  const [email, setEmail]             = useState("")
+  const [firstName, setFirstName]     = useState("")
+  const [lastName, setLastName]       = useState("")
+  const [phone, setPhone]             = useState("")
+  const [loading, setLoading]         = useState(false)
+  const [spinning, setSpinning]       = useState(false)
+  const [hasSpun, setHasSpun]         = useState(false)
+  const [sessionId, setSessionId]     = useState("")
+  const [visitorId, setVisitorId]     = useState("")
+  const [spotsLeft, setSpotsLeft]     = useState(0)
   const [enteredToday, setEnteredToday] = useState(0)
-  const [viewersNow, setViewersNow] = useState(0)
-  const [error, setError]           = useState<string | null>(null)
+  const [viewersNow, setViewersNow]   = useState(0)
+  const [error, setError]             = useState<string | null>(null)
 
   const leadIdRef = useRef<string | null>(null)
 
-  const theme        = THEMES[variant as keyof typeof THEMES] ?? THEMES.v1
+  const theme         = THEMES[variant as keyof typeof THEMES] ?? THEMES.v1
   const compliantMode = process.env.NEXT_PUBLIC_COMPLIANT_MODE === "true"
-  const testMode     = process.env.NEXT_PUBLIC_TEST_MODE === "true"
+  const testMode      = process.env.NEXT_PUBLIC_TEST_MODE === "true"
 
   useEffect(() => {
     initPostHog()
 
-    // *** FIX: check returner BEFORE getVisitorId() writes the key ***
     const returner = isReturner()
     const sid = getSessionId()
     const vid = getVisitorId()
@@ -250,6 +249,7 @@ export default function SpinClient({
     setSpinning(true)
     playSound("click")
     capture("spin_clicked", { offerId: offer.id, variant, ...getUTMParams() })
+    trackEvent({ event: "spin_clicked", offerId: offer.id, locale, variant, sessionId, visitorId })
   }
 
   async function handleWin() {
@@ -270,6 +270,13 @@ export default function SpinClient({
       `email=${encodeURIComponent(emailVal)}`,
     ].join("&")
     return `${offer.affiliatePostUrl}&x=${encodeURIComponent(prepop)}&s2=${leadId}`
+  }
+
+  function openAffiliateUrl(leadId: string) {
+    if (!testMode && offer.affiliatePostUrl) {
+      const affiliateUrl = buildAffiliateUrl(firstName, lastName, email, leadId)
+      window.open(affiliateUrl, "_blank")
+    }
   }
 
   async function handleEmailSubmit(e: React.FormEvent) {
@@ -297,21 +304,18 @@ export default function SpinClient({
       leadIdRef.current = result.leadId
 
       capture("lead_submitted", {
-        offerId:  offer.id,
+        offerId:   offer.id,
         variant,
         locale,
-        leadId:   result.leadId,
-        zone_id:  utms.utm_content,
+        leadId:    result.leadId,
+        zone_id:   utms.utm_content,
         age_group: utms.age_group,
-        cost:     utms.cost,
+        cost:      utms.cost,
       })
 
       if (testMode) {
         console.log("✅ TEST MODE — Lead saved to DB:", result.leadId)
         console.log("📋 Lead data:", { email, firstName, lastName, ...utms })
-      } else {
-        const affiliateUrl = buildAffiliateUrl(firstName, lastName, email, result.leadId)
-        window.location.href = affiliateUrl
       }
 
       setStep("phone")
@@ -333,7 +337,7 @@ export default function SpinClient({
       await updateLeadPhone(leadIdRef.current, phone)
     } else {
       await saveLead({
-        offerId: offer.id,
+        offerId:  offer.id,
         email,
         phone,
         firstName,
@@ -348,6 +352,9 @@ export default function SpinClient({
     capture("phone_upsell_submitted", { offerId: offer.id, variant, locale })
     setLoading(false)
     setStep("done")
+
+    // Open affiliate URL in new tab after collecting phone
+    openAffiliateUrl(leadIdRef.current ?? "")
   }
 
   async function handleExitIntentSubmit(emailVal: string, first: string, last: string) {
@@ -366,7 +373,6 @@ export default function SpinClient({
 
     if (result.success && result.leadId) {
       capture("exit_intent_submitted", { offerId: offer.id, variant, leadId: result.leadId })
-
       if (!testMode && offer.affiliatePostUrl) {
         const affiliateUrl = buildAffiliateUrl(first, last, emailVal, result.leadId)
         window.open(affiliateUrl, "_blank")
@@ -652,7 +658,14 @@ export default function SpinClient({
                   {loading ? "Processing..." : "2× MY ENTRIES →"}
                 </button>
               </form>
-              <button onClick={() => setStep("done")} className="skip-btn" style={{ color: theme.textSecondary }}>
+              <button
+                onClick={() => {
+                  setStep("done")
+                  openAffiliateUrl(leadIdRef.current ?? "")
+                }}
+                className="skip-btn"
+                style={{ color: theme.textSecondary }}
+              >
                 No thanks, skip
               </button>
             </div>
@@ -669,7 +682,7 @@ export default function SpinClient({
               </div>
               <div className="entry-card">
                 <div className="entry-label" style={{ color: theme.textSecondary }}>Your entry number</div>
-                <div className="entry-num"   style={{ color: theme.accent }}>
+                <div className="entry-num" style={{ color: theme.accent }}>
                   #{Math.floor(Math.random() * 90000) + 10000}
                 </div>
               </div>
