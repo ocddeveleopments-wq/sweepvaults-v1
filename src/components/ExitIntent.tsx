@@ -36,12 +36,9 @@ export default function ExitIntent({
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName]   = useState("")
 
-  const triggeredRef    = useRef(false)
-  const scrollDepthRef  = useRef(0)
-  const lastScrollY     = useRef(0)
-  const lastScrollTime  = useRef(Date.now())
+  const triggeredRef       = useRef(false)
+  const hasScrolledDownRef = useRef(false)
 
-  // ─── Gate: can we show? ───────────────────────────────────────────────────
   function canShow() {
     if (triggeredRef.current) return false
     if (skipReturners && isReturner()) return false
@@ -59,88 +56,55 @@ export default function ExitIntent({
     incrementExitIntentShows(offerId)
     setLastExitShown(offerId)
     setVisible(true)
-    capture("exit_intent_shown", {
-      offerId,
-      variant,
-      scrollDepth: scrollDepthRef.current,
-      trigger,
-    })
+    capture("exit_intent_shown", { offerId, variant, trigger })
   }
 
-  // ─── Scroll depth tracker ─────────────────────────────────────────────────
+  // ─── Timed trigger — fires after 8 seconds ─────────────────────────────
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollable = document.body.scrollHeight - window.innerHeight
-      if (scrollable <= 0) return
-      scrollDepthRef.current = Math.round((window.scrollY / scrollable) * 100)
-    }
-    window.addEventListener("scroll", handleScroll, { passive: true })
-    return () => window.removeEventListener("scroll", handleScroll)
+    const timer = setTimeout(() => {
+      triggerModal("timed_8s")
+    }, 8000)
+    return () => clearTimeout(timer)
   }, [])
 
-  // ─── Desktop: mouse leaves top of viewport ────────────────────────────────
-  useEffect(() => {
-    const handleMouseLeave = (e: MouseEvent) => {
-      // Only fire when cursor exits through the TOP of the page
-      if (e.clientY > 10) return
-      triggerModal("mouse_leave")
-    }
-    document.addEventListener("mouseleave", handleMouseLeave)
-    return () => document.removeEventListener("mouseleave", handleMouseLeave)
-  }, [])
-
-  // ─── Mobile: rapid scroll UP (back-to-top gesture = intent to leave) ──────
+  // ─── Scroll-back trigger — scrolled down then back to top ──────────────
   useEffect(() => {
     const handleScroll = () => {
-      const now      = Date.now()
-      const currentY = window.scrollY
-      const deltaY   = lastScrollY.current - currentY  // positive = scrolling up
-      const deltaT   = now - lastScrollTime.current
-
-      if (
-        deltaY > 60 &&
-        deltaT < 300 &&
-        scrollDepthRef.current > 20  // lowered from 30 — spin pages are short
-      ) {
-        triggerModal("scroll_up")
+      if (window.scrollY > 100) {
+        hasScrolledDownRef.current = true
       }
-
-      lastScrollY.current    = currentY
-      lastScrollTime.current = now
+      if (hasScrolledDownRef.current && window.scrollY < 50) {
+        triggerModal("scroll_back")
+      }
     }
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  // ─── Mobile: tab switch / app switch ─────────────────────────────────────
+  // ─── Visibility change — tab switch / app switch ────────────────────────
   useEffect(() => {
-    // FIX: was registering handleHidden but removing handleVisibility (wrong ref)
     const handleVisibilityChange = () => {
       if (document.visibilityState !== "hidden") return
-      if (scrollDepthRef.current < 15) return  // lowered threshold
       triggerModal("visibility_hidden")
     }
     document.addEventListener("visibilitychange", handleVisibilityChange)
-    return () =>
-      document.removeEventListener("visibilitychange", handleVisibilityChange)
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange)
   }, [])
 
-  // ─── Mobile: back button ─────────────────────────────────────────────────
+  // ─── Back button ────────────────────────────────────────────────────────
   useEffect(() => {
     window.history.pushState({ exitIntent: true }, "")
     const handlePopState = () => {
       triggerModal("back_button")
-      // Re-push so repeated back presses keep catching
       window.history.pushState({ exitIntent: true }, "")
     }
     window.addEventListener("popstate", handlePopState)
     return () => window.removeEventListener("popstate", handlePopState)
   }, [])
 
-  // ─── Handlers ─────────────────────────────────────────────────────────────
+  // ─── Handlers ───────────────────────────────────────────────────────────
   function handleClose() {
     setVisible(false)
-    // Allow re-trigger after close (reset flag so cooldown logic takes over)
     triggeredRef.current = false
     capture("exit_intent_closed", { offerId, variant })
   }
@@ -153,7 +117,7 @@ export default function ExitIntent({
     capture("exit_intent_form_submitted", { offerId, variant })
   }
 
-  // ─── Styles ───────────────────────────────────────────────────────────────
+  // ─── Styles ─────────────────────────────────────────────────────────────
   const textColor   = isLight ? "#111" : "#fff"
   const subColor    = isLight ? "#555" : "#aaa"
   const bgColor     = isLight ? "#fff" : "#0d0d0d"
@@ -212,7 +176,6 @@ export default function ExitIntent({
           transition: "opacity 0.3s ease, transform 0.3s ease",
         }}
       >
-        {/* Close X */}
         <button
           onClick={handleClose}
           style={{
@@ -245,15 +208,11 @@ export default function ExitIntent({
           Wait! Don&apos;t leave yet!
         </div>
 
-        <div
-          style={{ fontSize: "14px", color: textColor, marginBottom: "6px", fontWeight: 600 }}
-        >
+        <div style={{ fontSize: "14px", color: textColor, marginBottom: "6px", fontWeight: 600 }}>
           Your prize is still unclaimed
         </div>
 
-        <div
-          style={{ fontSize: "13px", color: subColor, marginBottom: "20px", lineHeight: 1.6 }}
-        >
+        <div style={{ fontSize: "13px", color: subColor, marginBottom: "20px", lineHeight: 1.6 }}>
           Enter your details below and we&apos;ll hold your spot for 24 hours.
         </div>
 
